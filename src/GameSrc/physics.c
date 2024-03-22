@@ -403,7 +403,7 @@ errtype physics_run(void) {
 #endif
 
     // Run the mouse look
-    //mouse_look_physics();
+    mouse_look_physics();
 
     // Here we are computing the values of the player's controls
     // from the values of the original control banks.  The value
@@ -429,7 +429,7 @@ errtype physics_run(void) {
     }
     update = some_move; // well, set one of them only once
     if (physics_running && time_passes) {
-		mouse_look_physics();
+		//mouse_look_physics();
         int i;
         ObjID oid;
         int damp;

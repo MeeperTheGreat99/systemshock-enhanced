@@ -47,6 +47,18 @@ fix inv_convert_y[MAX_CONVERT_TYPES][MAX_USE_MODES];
 #define SVGA_CONV_NORMAL 1
 #define SVGA_CONV_SCREEN 2
 
+void gr2ss_mode_hack(bool on) {
+	if (on) {
+		char m = 4;
+		int w = 1920;
+		int h = 1080;
+		convert_x[convert_type][m] = fix_div(fix_make(w, 0), convert_x[convert_type][0]);
+		convert_y[convert_type][m] = fix_div(fix_make(h, 0), convert_y[convert_type][0]);
+		inv_convert_x[convert_type][m] = fix_div(convert_x[convert_type][0], fix_make(w, 0));
+		inv_convert_y[convert_type][m] = fix_div(convert_y[convert_type][0], fix_make(h, 0));
+	}
+}
+
 // Internal prototypes
 
 uchar perform_svga_conversion(uchar mask) {

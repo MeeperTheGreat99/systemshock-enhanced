@@ -485,7 +485,7 @@ frc *fr_place_view(frc *view, void *v_cam, void *cnvs, int pflags, char axis, in
     fr->flags = pflags;
     fr->camptr = cam;
     if (fov == 0)
-		fov = global_fov;
+		fov = FR_DEF_FOV;
     if (axis == 0)
         axis = FR_DEF_AXIS;
     fr->viewer_zoom = g3_get_zoom(axis, build_fix_angle(fov), wid, hgt);
@@ -589,7 +589,7 @@ void _fr_change_detail(int det) {
         gr_set_per_detail_level(GR_HIGH_PER_DETAIL);
     }
     if (_fr->fov == 0)
-		fov = global_fov;
+        fov = FR_DEF_FOV;
     else
         fov = _fr->fov;
     tmpz = g3_get_zoom(FR_DEF_AXIS, fov, _fr->draw_canvas.bm.w, _fr->draw_canvas.bm.h);

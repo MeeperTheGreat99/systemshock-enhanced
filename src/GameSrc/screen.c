@@ -45,6 +45,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "leanmetr.h"
 #include "wrapper.h"
 #include "Shock.h"
+#include "Prefs.h"
 
 /*
 KLC - stereo
@@ -147,7 +148,7 @@ errtype screen_init(void) {
     _screen_init_mouse(root_region, &main_slab, TRUE); // KLC - moved here
 
     install_motion_mouse_handler(mainview_region, NULL);
-
+	
 #ifdef SVGA_SUPPORT
     gr2ss_register_init(0, 320, 200);
     gr2ss_register_mode(0, 320, 400);

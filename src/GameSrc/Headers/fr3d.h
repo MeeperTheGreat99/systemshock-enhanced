@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define FR3D_H
 
 #define FR_PT_CNT   256
-#define FR_DEF_FOV 110
+#define FR_DEF_FOV 80
 #define FR_DEF_AXIS 'X'
 
 #define AXIS_ORDER AXIS_RIGHT, AXIS_DOWN, AXIS_IN

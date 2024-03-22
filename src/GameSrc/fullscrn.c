@@ -231,6 +231,9 @@ void change_svga_screen_mode() {
                      else
              */
             cur_m = svga_mode_data[mode_id];
+			// widescreen support
+			if (mode_id == 4)
+				cur_m = -69;
             retval = gr_set_mode(cur_m, TRUE);
             if (retval == -1) {
                 mode_id = (mode_id + 1) % 5;
@@ -254,6 +257,7 @@ void change_svga_screen_mode() {
         cur_w = grd_mode_cap.w;
         cur_h = grd_mode_cap.h;
     }
+	
     // calculate new pixel ratio for automap; force 1 for 320x200
     // KLC - we're never 320x200   amap_pixratio_set(svga_mode_data[mode_id]==GRM_320x200x8?FIX_UNIT:0);
     // amap_pixratio_set(0);
@@ -338,6 +342,9 @@ void change_svga_screen_mode() {
 
 void global_update_fov()
 {
+#ifdef USE_OPENGL
+    opengl_remake_projection_matrix();
+#endif
 	if (full_game_3d)
 		fullscreen_start();
 	else
@@ -373,7 +380,7 @@ void fullscreen_start() {
     inv_change_fullscreen(TRUE);
     //   mouse_unconstrain();
     player_struct.hardwarez_status[CPTRIP(FULLSCR_HARD_TRIPLE)] |= WARE_ON;
-    string_message_info(REF_STR_FSMode);
+    //string_message_info(REF_STR_FSMode);
     mfd_force_update();
     draw_page_buttons(TRUE);
 #ifdef STEREO_SUPPORT

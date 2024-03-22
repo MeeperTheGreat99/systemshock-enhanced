@@ -46,6 +46,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "audiolog.h"
 #include "Xmi.h"
 
+#include "gr2ss.h" // for widescreen support
+
 //--------------
 //  PROTOTYPES
 //--------------
@@ -226,7 +228,9 @@ extern bool DoubleSize;
 
 uchar change_mode_func(ushort keycode, uint32_t context, intptr_t data) {
     int newm = (int)data;
-
+	
+	gr2ss_mode_hack(true); // widescreen support
+	
     if ((newm == AUTOMAP_LOOP) && ((!player_struct.hardwarez[HARDWARE_AUTOMAP]) || (global_fullmap->cyber)))
         return TRUE;
     _new_mode = newm;

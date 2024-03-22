@@ -61,7 +61,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define STATUS_START_OFFSET 0
 #define STATUS_BIO_Y_DELTA  1
-#define MAX_BIO_LENGTH      307
+// #define MAX_BIO_LENGTH      307 // UNNECESSARY
 #define STATUS_BIO_LENGTH   (STATUS_BIO_WIDTH - STATUS_START_OFFSET)
 #define STATUS_BIO_TAIL     30
 #define STATUS_BIO_PEAK     (STATUS_BIO_HEIGHT - 3) // 3 because of zany art size

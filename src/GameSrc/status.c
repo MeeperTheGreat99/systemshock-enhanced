@@ -74,7 +74,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define STATUS_START_OFFSET 0
 #define STATUS_BIO_Y_DELTA  1
-#define MAX_BIO_LENGTH      307
+//#define MAX_BIO_LENGTH      1024 // was 307
 #define STATUS_BIO_LENGTH   (STATUS_BIO_WIDTH - STATUS_START_OFFSET)
 #define STATUS_BIO_TAIL     30
 #define STATUS_BIO_PEAK     (STATUS_BIO_HEIGHT - 3) // 3 because of zany art size
@@ -544,6 +544,10 @@ void status_bio_update(void) {
     int draw_location;
     int var_value;
     static grs_canvas *old_canvas;
+	
+	// why the hell are you even trying this if biorythym isnt visible in fullscreen???
+	if (full_game_3d)
+		return;
 
     if (!gBioInited)
         return;
@@ -555,13 +559,18 @@ void status_bio_update(void) {
     }
     change_bio_vars();
     old_canvas = grd_canvas;
+	if (bio_canvas.bm.type == 184) {
+		WARN("bio_canvas.bm.type is %d", bio_canvas.bm.type);
+		status_bio_update_screenmode();
+		INFO("bio_canvas.bm.type is now fixed to %d", bio_canvas.bm.type);
+	}
     gr_set_canvas(&bio_canvas);
     curr_blk = bio_data;
 
 #ifdef SVGA_SUPPORT
     gr_push_state();
 #endif
-    for (i = 0; i < NUM_BIO_TRACKS; i++, curr_blk++) {
+    for (i = 0; i < NUM_BIO_TRACKS; i++, curr_blk++) {		
         if (curr_blk->free == FALSE) {
             // We must check to see if this track should be drawn now,
             // or must it wait until it's time
@@ -571,6 +580,10 @@ void status_bio_update(void) {
                 curr_blk->counter = 0;
                 color_base = track_colors[i]; // Prevent need to use index every time
                 the_head = curr_blk->head;    // Prevent need to look inside data structure every time
+
+				// fix an oopsie
+				if (curr_blk->data == NULL)
+					continue;
 
                 // We must first check if the variable is greater than max value, if so make it max_value
                 var_value = (*(curr_blk->data) > curr_blk->max_value) ? curr_blk->max_value : (*(curr_blk->data));

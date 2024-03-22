@@ -48,14 +48,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "status.h"
 #include "version.h"
 
-#include "fullscrntogg.h"
+#include "fullsctg.h"
 
 //--------------------
 //  Globals
 //--------------------
 bool gPlayingGame;
-bool gFullscreenArg;
-bool gWindowedArg;
 
 grs_screen *cit_screen;
 SDL_Window *window;
@@ -149,6 +147,8 @@ int main(int argc, char **argv) {
     _new_mode = _current_loop = SETUP_LOOP;
     loopmode_enter(SETUP_LOOP);
 
+	gr2ss_mode_hack(true); // widescreen support
+
     // Start the main loop
 	
     INFO("Showing main menu, starting game loop");
@@ -196,7 +196,10 @@ void InitSDL() {
     gr_init();
 
     extern short svga_mode_data[];
-    gr_set_mode(svga_mode_data[gShockPrefs.doVideoMode], TRUE);
+	if (gShockPrefs.doVideoMode == 4)
+		gr_set_mode(-69, TRUE);
+	else
+		gr_set_mode(svga_mode_data[gShockPrefs.doVideoMode], TRUE);
 
     INFO("Setting up screen and render contexts");
 
@@ -208,6 +211,10 @@ void InitSDL() {
     char window_title[128];
     //sprintf(window_title, "System Shock - %s", SHOCKOLATE_VERSION);
 	sprintf(window_title, "System Shock - Enhanced");
+
+    // grd_cap->w & h
+    int w = grd_cap->w;
+    int h = grd_cap->h;
 
     window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, grd_cap->w, grd_cap->h,
                               SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
@@ -252,7 +259,7 @@ void SetSDLPalette(int index, int count, uchar *pal) {
     static bool gammalut_init = 0;
     static uchar gammalut[100 - 10 + 1][256];
     if (!gammalut_init) {
-		double factor = 2.2;// (can_use_opengl() ? 1.0 : 2.2); // OpenGL uses 2.2
+		double factor = (use_opengl() ? 1.0 : 2.2); // OpenGL uses 2.2
         int i, j;
         for (i = 10; i <= 100; i++) {
             double gamma = (double)i * 1.0 / 100;

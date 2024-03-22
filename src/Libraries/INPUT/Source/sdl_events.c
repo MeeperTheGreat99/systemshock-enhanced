@@ -25,9 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "lg.h"
 #include "kb.h"
 #include "mouse.h"
-#include "keypadinput.h"
-#include "fullscrntogg.h"
-#include "Prefs.h"
+#include "fullsctg.h"
+#include "kpinput.h"
 #include <stdlib.h>
 #include <SDL.h>
 #include <OpenGL.h>
@@ -35,35 +34,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 extern SDL_Window *window;
 extern SDL_Renderer *renderer;
-
-bool fullscreenActive = false;
-
-void toggleFullScreen() {
-    fullscreenActive = !fullscreenActive;
-	gShockPrefs.doFullscreen = fullscreenActive;
-    SDL_SetWindowFullscreen(window, fullscreenActive ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-
-    if (!(SDL_GetWindowFlags(window) & SDL_WINDOW_MAXIMIZED))
-        SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-	SavePrefs();
-}
-
-void enterFullscreen(bool changePref)
-{
-	fullscreenActive = true;
-	if (changePref)
-		gShockPrefs.doFullscreen = fullscreenActive;
-	SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
-}
-
-void exitFullscreen(bool changePref)
-{
-	fullscreenActive = false;
-	if (changePref)
-		gShockPrefs.doFullscreen = fullscreenActive;
-	SDL_SetWindowFullscreen(window, 0);
-	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-}
 
 // current state of the keys, based on the SystemShock/Mac Keycodes (sshockKeyStates[keyCode] has the state for that
 // key) set at the beginning of each frame in pump_events()
@@ -500,56 +470,6 @@ uchar Ascii2Code[95] = {
     0x32  // ~
 };
 
-// initialize the arrays created in keypadinput.h so compiler is not angy
-bool keypadinputs[12] = { false };
-bool keypadinputs_lastframe[12] = { false };
-
-// pls don't kill me for naming this function this my brain was operating solely on a bag of Lay's.
-// the function just takes an array of booleans and sets it's values according to which keys
-// on the keypad are pressed.
-void keypadthingyidk(bool *keypadarray, SDL_Keycode keypadeventcode, bool keypadeventstate)
-{
-	switch (keypadeventcode)
-	{
-	case SDLK_KP_1:
-		keypadarray[1] = keypadeventstate;
-		break;
-	case SDLK_KP_2:
-		keypadarray[2] = keypadeventstate;
-		break;
-	case SDLK_KP_3:
-		keypadarray[3] = keypadeventstate;
-		break;
-	case SDLK_KP_4:
-		keypadarray[4] = keypadeventstate;
-		break;
-	case SDLK_KP_5:
-		keypadarray[5] = keypadeventstate;
-		break;
-	case SDLK_KP_6:
-		keypadarray[6] = keypadeventstate;
-		break;
-	case SDLK_KP_7:
-		keypadarray[7] = keypadeventstate;
-		break;
-	case SDLK_KP_8:
-		keypadarray[8] = keypadeventstate;
-		break;
-	case SDLK_KP_9:
-		keypadarray[9] = keypadeventstate;
-		break;
-	case SDLK_KP_0:
-		keypadarray[0] = keypadeventstate;
-		break;
-	case SDLK_KP_MINUS:
-		keypadarray[10] = keypadeventstate;
-		break;
-	case SDLK_KP_MULTIPLY:
-		keypadarray[11] = keypadeventstate;
-		break;
-	}
-}
-
 void pump_events(void) {
     SDL_Event ev;
 
@@ -564,29 +484,9 @@ void pump_events(void) {
         //       kbs_events with .state == KBS_UP come from?
         case SDL_KEYUP:
         case SDL_KEYDOWN: {
-			// new (and jank af) keypad input code. is it really jank? i think so but that is for you to decide.
-			SDL_KeyboardEvent keypadevent = ev.key;
-			SDL_Keycode keypadeventcode = keypadevent.keysym.sym;
-			bool keypadeventstate = keypadevent.state ? SDL_PRESSED : SDL_RELEASED;
-
-			// set the pressed state of each usable keypad key in the array of booleans
-			keypadthingyidk(keypadinputs, keypadeventcode, keypadeventstate);
-
-			// for each of the pressed keys in the array, call the keypadinputdown function,
-			// which mfdfunc.c defines and thereby "intercepts" so that keypad input can be processed.
-			// however, the function will only be called if the key was not pressed last frame.
-			// this is so you cannot hold down a key and repeat it that way. it was very annoying messing
-			// up a keypad code because of that. no more.
-			for (int ikey = 0; ikey < sizeof(keypadinputs) / sizeof(bool); ikey++)
-			{
-				if (keypadinputs[ikey] && !keypadinputs_lastframe[ikey])
-				{
-					keypadinputdown(ikey);
-				}
-			}
-			// set pressed state of last frame, which is actually this frame, but next frame it will be last frame
-			// and yeah yeah you get the point
-			keypadthingyidk(keypadinputs_lastframe, keypadeventcode, keypadeventstate);
+			int keypadKey = keypadIDXFromSDLKey(ev.key.keysym.sym);
+			if (keypadKey != -1)
+				setKeypadKeyPressed(keypadKey, ev.key.state == SDL_PRESSED);
 
             uchar c = sdlKeyCodeToSSHOCKkeyCode(ev.key.keysym.sym);
             if (c != KBC_NONE) {
@@ -677,8 +577,10 @@ void pump_events(void) {
                     keyEvent.modifiers |= KB_MOD_ALT;
 
                 if (ev.key.state == SDL_PRESSED) {
+					// toggle fullscreen shortcut
                     if (ev.key.keysym.sym == SDLK_RETURN && mod & KMOD_ALT) {
-                        toggleFullScreen();
+                        toggleFullscreen(true);
+						// do not mess with shock input if this shortcut is pressed
                         break;
                     }
 
@@ -856,6 +758,9 @@ void pump_events(void) {
             break;
         }
     }
+	
+	doMFDKeypadInput();
+	resetKeypadKeysLast();
 }
 
 //===============================================================
@@ -1065,3 +970,59 @@ void set_mouse_chaos(short dx, short dy) {
 }
 
 void sdl_mouse_init(void) { nextMouseEvent = 0; }
+
+//========================================
+// keypad input
+//========================================
+
+short keypadKeys[12] = { false };
+short keypadKeysLast[12] = { false };
+const size_t keypadKeyCount = sizeof(keypadKeys) / sizeof(keypadKeys[0]);
+ 
+void resetKeypadKeysLast(void) {
+	memcpy(keypadKeysLast, keypadKeys, sizeof(keypadKeysLast));
+}
+
+void setKeypadKeyPressed(int key, short pressed) {
+	if (key < 0 || key > keypadKeyCount)
+		return;
+	
+	keypadKeys[key] = pressed;
+}
+
+short getKeypadKeyPressed(int key) {
+	return keypadKeys[key] && !keypadKeysLast[key];
+}
+
+int keypadIDXFromSDLKey(int keycode) {
+	switch (keycode) {
+	default:
+		return -1;
+	case SDLK_KP_0:
+		return 0;
+	case SDLK_KP_1:
+		return 1;
+	case SDLK_KP_2:
+		return 2;
+	case SDLK_KP_3:
+		return 3;
+	case SDLK_KP_4:
+		return 4;
+	case SDLK_KP_5:
+		return 5;
+	case SDLK_KP_6:
+		return 6;
+	case SDLK_KP_7:
+		return 7;
+	case SDLK_KP_8:
+		return 8;
+	case SDLK_KP_9:
+		return 9;
+	case SDLK_KP_MINUS:
+		return 10;
+	case SDLK_KP_MULTIPLY:
+		return 11;
+	}
+	
+	return -1;
+}

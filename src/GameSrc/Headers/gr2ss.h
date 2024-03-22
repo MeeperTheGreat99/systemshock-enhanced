@@ -63,6 +63,7 @@ extern fix inv_convert_y[MAX_CONVERT_TYPES][MAX_USE_MODES];
 extern char convert_type;
 extern char convert_use_mode;
 void mouse_unconstrain(void);
+void gr2ss_mode_hack(bool on);
 uchar perform_svga_conversion(uchar mask);
 
 extern short MODE_SCONV_X(short cval, short m);

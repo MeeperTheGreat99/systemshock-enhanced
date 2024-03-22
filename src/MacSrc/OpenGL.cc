@@ -20,6 +20,10 @@
 #include <SDL_opengl.h>
 #endif
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 extern "C" {
 #include "mainloop.h"
 #include "map.h"
@@ -108,11 +112,11 @@ static const float ViewMatrix[] = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 
 
 // Projection matrix; experimentally tweaked for near-perfect alignment:
 // FOV 89.5 deg, aspect ratio 1:1, near plane 0, far plane 100
-static const float ProjectionMatrix[] = {1.00876, 0.0, 0.0,  0.0,  0.0, 1.00876, 0.0, 0.0,
+static float ProjectionMatrix[] = {1.00876, 0.0, 0.0,  0.0,  0.0, 1.00876, 0.0, 0.0,
                                          0.0,     0.0, -1.0, -1.0, 0.0, 0.0,     0.0, 0.0};
 
 // Identity matrix for sprite rendering
-static const float IdentityMatrix[] = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0};
+static float IdentityMatrix[] = {1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0};
 
 static inline GLint get_texture_min_func() {
     // convert prefs texture filtering mode to GL min func value
@@ -506,7 +510,8 @@ void toggle_opengl() {
         case 0: {
             message_info("Switching to OpenGL bilinear rendering");
             gShockPrefs.doTextureFilter = 1;
-			global_fov = 80;
+			//global_fov = 80;
+            global_fov = gShockPrefs.doFov;
 			global_update_fov();
         } break;
         case 1: {
@@ -521,7 +526,8 @@ void toggle_opengl() {
         message_info("Switching to OpenGL unfiltered");
         gShockPrefs.doUseOpenGL = true;
         gShockPrefs.doTextureFilter = 0;
-		global_fov = 80;
+		//global_fov = 80;
+        global_fov = gShockPrefs.doFov;
 		global_update_fov();
     }
     SavePrefs();
@@ -873,6 +879,7 @@ int opengl_draw_poly(long c, int n_verts, g3s_phandle *p, char gour_flag) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+    glUseProgram(hdrShaderProgram.shaderProgram);
     GLint lightAttrib = colorShaderProgram.lightAttrib;
 
     long a = 0, b = n_verts - 1;
@@ -965,5 +972,10 @@ void opengl_begin_sensaround(uchar version) {
 }
 
 void opengl_end_sensaround() { opengl_enabled = true; }
+
+void opengl_remake_projection_matrix() {
+    //memcpy(ProjectionMatrix, ProjectionMatrix2, sizeof(ProjectionMatrix));
+    //memcpy(IdentityMatrix, IdentityMatrix2, sizeof(IdentityMatrix));
+}
 
 #endif // USE_OPENGL

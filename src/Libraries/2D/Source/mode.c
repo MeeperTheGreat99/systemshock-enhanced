@@ -41,6 +41,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mode.h"
 #include "cnvtab.h"
 #include "bitmap.h"
+#include "Prefs.h"
 
 grs_mode_info grd_mode_info[GRD_MODES] = {
    {  320,  200,  8 },
@@ -54,7 +55,7 @@ grs_mode_info grd_mode_info[GRD_MODES] = {
    { 1024,  768,  8 },
    { 1280, 1024,  8 },
    {  320,  200, 24 },
-   {  640,  480, 24 },
+   {  1280,  720, 24 },
    {  800,  600, 24 },
    { 1024,  768, 24 },
    { 1280, 1024, 24 }
@@ -62,7 +63,12 @@ grs_mode_info grd_mode_info[GRD_MODES] = {
 
 // code from SMODE.ASM
 int gr_set_mode (int mode, int clear)
- {
+{
+	// widescreen support
+	bool windowMode = false;
+	if (mode == -69)
+		windowMode = true;
+	
 	gr_set_screen_mode(mode, clear);		// try to set graphics mode.
 	gr_init_device(&grd_info);					// try to initialize device if pointer isn't NULL
 	
@@ -70,6 +76,10 @@ int gr_set_mode (int mode, int clear)
 	grd_mode = mode;
 	grd_mode_cap.w = grd_mode_info[mode].w;
 	grd_mode_cap.h = grd_mode_info[mode].h;
+	if (windowMode) {
+		grd_mode_cap.w = 1920;
+		grd_mode_cap.h = 1080;
+	}
 	
 	// store aspect into capability struct.
 	grd_mode_cap.aspect = 0x010000; // fixed 1:1 aspect ratio on Mac
@@ -78,7 +88,7 @@ int gr_set_mode (int mode, int clear)
 	grd_pixel_table = grd_canvas_table_list[BMT_DEVICE];
 	
 	return(0);
- }
+}
  
  
  

@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "physics.h"
 #include "objsim.h"
 #include "Prefs.h"
+#include "movekeys.h"
 
 float mlook_hsens = 250;
 float mlook_vsens = 50;
@@ -84,6 +85,12 @@ void mouse_look_physics() {
 
             // Now put the player there
             EDMS_holistic_teleport(objs[PLAYER_OBJ].info.ph, &current_state);
+
+			//player_controls[1][CONTROL_XYROT] = mvelx;
+			//physics_set_relax(CONTROL_XYROT, TRUE);
+
+			//physics_set_one_control(1, CONTROL_XYROT, (byte)mvelx);
+
         }
     }
 }

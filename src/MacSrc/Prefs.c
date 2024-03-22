@@ -37,10 +37,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "input.h"
 #include "mainloop.h"
 #include "movekeys.h"
+#include "mfdext.h"
 
 #include "fr3d.h"
 #include "fovchange.h"
-#include "fullscrntogg.h"
 
 short max_fov = 135;
 short min_fov = 70;
@@ -75,26 +75,31 @@ extern uchar curr_alog_vol;
 
 extern uchar audiolog_setting;
 
-static const char *PREF_LANGUAGE = "language";
-static const char *PREF_CAPTUREMOUSE = "capture-mouse";
-static const char *PREF_INVERTMOUSEY = "invert-mousey";
-static const char *PREF_MUSIC_VOL = "music-volume";
-static const char *PREF_SFX_VOL = "sfx-volume";
-static const char *PREF_ALOG_VOL = "alog-volume";
+// VIDEO PREFERENCES
 static const char *PREF_VIDEOMODE = "video-mode";
 static const char *PREF_HALFRES = "half-resolution";
 static const char *PREF_DETAIL = "detail";
 static const char *PREF_USE_OPENGL = "use-opengl";
 static const char *PREF_TEX_FILTER = "texture-filter";
-static const char *PREF_ONSCR_HELP = "onscreen-help";
 static const char *PREF_GAMMA = "gamma";
-static const char *PREF_MSG_LENGTH = "message-length";
+static const char *PREF_FULLSCREEN = "fullscreen";
+static const char *PREF_WIDTH = "width";
+static const char *PREF_HEIGHT = "height";
+static const char *PREF_FOV = "fov";
+// AUDIO PREFERENCES
+static const char *PREF_LANGUAGE = "language";
+static const char *PREF_MUSIC_VOL = "music-volume";
+static const char *PREF_SFX_VOL = "sfx-volume";
+static const char *PREF_ALOG_VOL = "alog-volume";
 static const char *PREF_ALOG_SETTING = "alog-setting";
 static const char *PREF_MIDI_BACKEND = "midi-backend";
 static const char *PREF_MIDI_OUTPUT = "midi-output";
+// MISC PREFERENCES
 static const char *PREF_PERSIST_MLOOK = "persist-mouselook";
-static const char *PREF_FOV = "fov";
-static const char *PREF_FULLSCREEN = "fullscreen";
+static const char *PREF_CAPTUREMOUSE = "capture-mouse";
+static const char *PREF_INVERTMOUSEY = "invert-mousey";
+static const char *PREF_ONSCR_HELP = "onscreen-help";
+static const char *PREF_MSG_LENGTH = "message-length";
 
 static void SetShockGlobals(void);
 
@@ -132,6 +137,8 @@ void SetDefaultPrefs(void) {
 	gShockPrefs.doFullscreen = false; // Windowed mode
     gShockPrefs.goOnScreenHelp = true;
     gShockPrefs.doGamma = 29;    // Default gamma (29 out of 100).
+    gShockPrefs.doWidth = 640;
+    gShockPrefs.doHeight = 480;
     gShockPrefs.goMsgLength = 0; // Normal
     audiolog_setting = 1;
 
@@ -268,9 +275,13 @@ int16_t LoadPrefs(void) {
 				fov = max_fov;
 			gShockPrefs.doFov = (short)fov;
 			saved_fov = gShockPrefs.doFov;
-			global_fov = gShockPrefs.doUseOpenGL ? 80 : gShockPrefs.doFov;
+			global_fov = gShockPrefs.doFov;
 		} else if (strcasecmp(key, PREF_FULLSCREEN) == 0) {
 			gShockPrefs.doFullscreen = is_true(value);
+		} else if (strcasecmp(key, PREF_WIDTH) == 0) {
+			gShockPrefs.doWidth = atoi(value);
+		} else if (strcasecmp(key, PREF_HEIGHT) == 0) {
+			gShockPrefs.doHeight = atoi(value);
 		}
     }
 
@@ -291,26 +302,47 @@ int16_t SavePrefs(void) {
         return -1;
     }
 
-    fprintf(f, "%s = %d\n", PREF_LANGUAGE, which_lang);
-    fprintf(f, "%s = %s\n", PREF_CAPTUREMOUSE, gShockPrefs.goCaptureMouse ? "yes" : "no");
-    fprintf(f, "%s = %s\n", PREF_INVERTMOUSEY, gShockPrefs.goInvertMouseY ? "yes" : "no");
-    fprintf(f, "%s = %d\n", PREF_MUSIC_VOL, curr_vol_lev);
-    fprintf(f, "%s = %d\n", PREF_SFX_VOL, sfx_on ? curr_sfx_vol : 0);
-    fprintf(f, "%s = %d\n", PREF_ALOG_VOL, curr_alog_vol);
+    // VIDEO PREFERENCES
+    fprintf(f, "%s\n%s\n%s\n",
+        "--------------------",
+        "Video Options",
+        "--------------------"
+    );
     fprintf(f, "%s = %d\n", PREF_VIDEOMODE, mode_id);
     fprintf(f, "%s = %s\n", PREF_HALFRES, DoubleSize ? "yes" : "no");
     fprintf(f, "%s = %d\n", PREF_DETAIL, _fr_global_detail);
     fprintf(f, "%s = %s\n", PREF_USE_OPENGL, gShockPrefs.doUseOpenGL ? "yes" : "no");
     fprintf(f, "%s = %d\n", PREF_TEX_FILTER, gShockPrefs.doTextureFilter);
-    fprintf(f, "%s = %s\n", PREF_ONSCR_HELP, gShockPrefs.goOnScreenHelp ? "yes" : "no");
     fprintf(f, "%s = %d\n", PREF_GAMMA, gShockPrefs.doGamma);
-    fprintf(f, "%s = %d\n", PREF_MSG_LENGTH, gShockPrefs.goMsgLength);
+    fprintf(f, "%s = %s\n", PREF_FULLSCREEN, gShockPrefs.doFullscreen ? "yes" : "no");
+    fprintf(f, "%s = %d\n", PREF_WIDTH, gShockPrefs.doWidth);
+    fprintf(f, "%s = %d\n", PREF_HEIGHT, gShockPrefs.doHeight);
+    fprintf(f, "%s = %d\n", PREF_FOV, gShockPrefs.doFov);
+    // AUDIO PREFERENCES
+    fprintf(f, "%s\n%s\n%s\n",
+        "--------------------",
+        "Audio Options",
+        "--------------------"
+    );
+    fprintf(f, "%s = %d\n", PREF_LANGUAGE, which_lang);
+    fprintf(f, "%s = %d\n", PREF_MUSIC_VOL, curr_vol_lev);
+    fprintf(f, "%s = %d\n", PREF_SFX_VOL, sfx_on ? curr_sfx_vol : 0);
+    fprintf(f, "%s = %d\n", PREF_ALOG_VOL, curr_alog_vol);
     fprintf(f, "%s = %d\n", PREF_ALOG_SETTING, audiolog_setting);
     fprintf(f, "%s = %d\n", PREF_MIDI_BACKEND, gShockPrefs.soMidiBackend);
     fprintf(f, "%s = %d\n", PREF_MIDI_OUTPUT, gShockPrefs.soMidiOutput);
-	fprintf(f, "%s = %s\n", PREF_PERSIST_MLOOK, gShockPrefs.goPersistMLook ? "yes" : "no");
-	fprintf(f, "%s = %d\n", PREF_FOV, gShockPrefs.doFov);
-	fprintf(f, "%s = %s\n", PREF_FULLSCREEN, gShockPrefs.doFullscreen ? "yes" : "no");
+    // MISC PREFERENCES
+    fprintf(f, "%s\n%s\n%s\n",
+        "--------------------",
+        "General Options",
+        "--------------------"
+    );
+    fprintf(f, "%s = %s\n", PREF_PERSIST_MLOOK, gShockPrefs.goPersistMLook ? "yes" : "no");
+    fprintf(f, "%s = %s\n", PREF_CAPTUREMOUSE, gShockPrefs.goCaptureMouse ? "yes" : "no");
+    fprintf(f, "%s = %s\n", PREF_INVERTMOUSEY, gShockPrefs.goInvertMouseY ? "yes" : "no");
+    fprintf(f, "%s = %s\n", PREF_ONSCR_HELP, gShockPrefs.goOnScreenHelp ? "yes" : "no");
+    fprintf(f, "%s = %d\n", PREF_MSG_LENGTH, gShockPrefs.goMsgLength);
+	
     fclose(f);
     return 0;
 }
@@ -598,16 +630,26 @@ HOTKEYLOOKUP HotKeyLookup[] = {
     {"\"data reader\"", DEMO_CONTEXT, hw_hotkey_callback, 8, 0, 56, 0},
     {"\"booster\"", DEMO_CONTEXT, hw_hotkey_callback, 12, 0, 57, 0},
     {"\"jumpjets\"", DEMO_CONTEXT, hw_hotkey_callback, 13, 0, 48, 0},
-    {"\"mfd left 1\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F1, 0},
-    {"\"mfd left 2\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F2, 0},
-    {"\"mfd left 3\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F3, 0},
-    {"\"mfd left 4\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F4, 0},
-    {"\"mfd left 5\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F5, 0},
-    {"\"mfd right 1\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F6, 0},
-    {"\"mfd right 2\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F7, 0},
-    {"\"mfd right 3\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F8, 0},
-    {"\"mfd right 4\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F9, 0},
-    {"\"mfd right 5\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F10, 0},
+    {"\"mfd left 1\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_LEFT, MFD_WEAPON_SLOT), 0, KEY_F1,
+     0},
+    {"\"mfd left 2\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_LEFT, MFD_ITEM_SLOT), 0, KEY_F2,
+     0},
+    {"\"mfd left 3\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_LEFT, MFD_MAP_SLOT), 0, KEY_F3,
+     0},
+    {"\"mfd left 4\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_LEFT, MFD_TARGET_SLOT), 0, KEY_F4,
+     0},
+    {"\"mfd left 5\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_LEFT, MFD_INFO_SLOT), 0, KEY_F5,
+     0},
+    {"\"mfd right 1\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_RIGHT, MFD_WEAPON_SLOT), 0,
+     KEY_F6, 0},
+    {"\"mfd right 2\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_RIGHT, MFD_ITEM_SLOT), 0, KEY_F7,
+     0},
+    {"\"mfd right 3\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_RIGHT, MFD_MAP_SLOT), 0, KEY_F8,
+     0},
+    {"\"mfd right 4\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_RIGHT, MFD_TARGET_SLOT), 0,
+     KEY_F9, 0},
+    {"\"mfd right 5\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_RIGHT, MFD_INFO_SLOT), 0,
+     KEY_F10, 0},
     //  { "\"mac_help\"",         DEMO_CONTEXT, MacHelpFunc,            0                        , 0, CTRL('/'),     0
     //  },
     {"\"toggle_options\"", DEMO_CONTEXT, wrapper_options_func, TRUE, 0, DOWN(KEY_ESC), 0},

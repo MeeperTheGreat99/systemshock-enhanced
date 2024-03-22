@@ -75,7 +75,7 @@ void gr_set_canvas (grs_canvas *c)
 int gr_push_canvas (grs_canvas *c)
 {
    if (grd_canvas_stackp >= CANVAS_STACKSIZE)
-      return -1;
+	  return -1;
    grd_canvas_stack[grd_canvas_stackp++] = grd_canvas;
    gr_set_canvas (c);
    return 0;

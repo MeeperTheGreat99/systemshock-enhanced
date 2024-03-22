@@ -177,4 +177,7 @@ extern TerrainData terrain_info;
 extern State standard_state;
 extern Robot standard_robot;
 
+extern byte player_controls[CONTROL_BANKS][6];
 #endif // __PHYSICS_H
+
+

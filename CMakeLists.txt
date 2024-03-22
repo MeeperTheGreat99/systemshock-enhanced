@@ -106,6 +106,7 @@ include_directories(
 	${SDL2_MIXER_INCLUDE_DIRS}
 	${FLUIDSYNTH_INCLUDE_DIRS}
 	${OPENGL_INCLUDE_DIRS}
+	${CMAKE_SOURCE_DIR}/src/Libraries/glm
 )
 
 if(NOT WIN32)
@@ -278,6 +279,7 @@ set(GAME_SRC
 	src/GameSrc/wrapper.c
 	src/GameSrc/gamerend.c
 	src/GameSrc/mouselook.c
+	src/GameSrc/fullsctg.c
 )
 
 include_directories(

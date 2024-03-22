@@ -58,7 +58,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "Prefs.h"
 #include "fr3d.h"
 #include "fovchange.h"
-#include "fullscrntogg.h"
+#include "fullsctg.h"
 
 #include "OpenGL.h"
 
@@ -352,9 +352,9 @@ uchar fv;
 #define MIDI_OUT_STR_SIZE 1024
 static char MIDI_STR_BUFFER[MIDI_OUT_STR_SIZE];
 
-char fovtext[20];
-
 static char *_get_temp_string(int num) {
+	static char fovValue[16];
+	
     switch (num) {
         case REF_STR_Renderer: return "Renderer";
         case REF_STR_Software: return "Software";
@@ -363,10 +363,10 @@ static char *_get_temp_string(int num) {
 		case REF_STR_RenderPrefs:   return "Prefs.";
 		case REF_STR_FOV: return "Field of View";
 		case REF_STR_FOV_Value:
-			memset(fovtext, 0, sizeof(fovtext));
-			sprintf(fovtext, "%d", saved_fov);
-			return fovtext;
+			itoa(saved_fov, fovValue, 10);
+			return fovValue;
 		case REF_STR_Fullscreen: return "Fullscreen";
+		case REF_STR_Dynamic: return "Dynamic";
 
         case REF_STR_TextFilt: return "Tex Filter";
         case REF_STR_TFUnfil:  return "Unfiltered";
@@ -986,7 +986,7 @@ uchar textlist_handler(uiEvent *ev, uchar butid) {
             // on ESC, clean up but pass the event through.
             textlist_cleanup(st);
             wrapper_panel_close(TRUE);
-            return FALSE;
+            return TRUE;
         }
         if (upness != 0) {
             char newstring;
@@ -1487,7 +1487,7 @@ static void fov_slider_dealfunc(short val) {
 	short newfov = minfov + ((maxfov - minfov) * newval);
 	gShockPrefs.doFov = newfov;
 	saved_fov = newfov;
-	global_fov = gShockPrefs.doUseOpenGL ? 80 : newfov;
+	global_fov = newfov;
 	opanel_redraw(TRUE);
 }
 
@@ -1744,12 +1744,8 @@ static void renderer_dealfunc(bool unused) {
     (void)unused;
 }
 
-void fullscreen_dealfunc()
-{
-	if (gShockPrefs.doFullscreen)
-		enterFullscreen(false);
-	else
-		exitFullscreen(false);
+void fullscreen_dealfunc() {
+	toggleFullscreen(true);
 }
 
 void detail_dealfunc(uchar det) {
@@ -1942,9 +1938,6 @@ void video_screen_init(void) {
 #ifdef USE_OPENGL
     // renderer
     if(can_use_opengl()) {
-
-		if (gShockPrefs.doUseOpenGL)
-			global_fov = 80;
 
         standard_button_rect(&r, i, 2, 2, 2);
         multi_init(i, 'g', REF_STR_Renderer, REF_STR_Software, ID_NULL,
@@ -2146,7 +2139,7 @@ void screenmode_screen_init(void) {
         uchar mode_ok = FALSE;
         char j = 0;
         standard_button_rect(&r, i, 2, 2, 2);
-        pushbutton_init(i, keys[i], REF_STR_ScreenModeText + i, screenmode_change, &r);
+        pushbutton_init(i, keys[i], (i == 4) ? REF_STR_Dynamic : REF_STR_ScreenModeText + i, screenmode_change, &r);
         while ((grd_info.modes[j] != -1) && !mode_ok) {
             if (grd_info.modes[j] == svga_mode_data[i])
                 mode_ok = TRUE;

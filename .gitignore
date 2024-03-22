@@ -63,3 +63,9 @@ savgam*.dat
 *.aps
 prefs.txt
 keybinds.txt
+
+#OpenGL test stuff
+src/Libraries/glm
+
+#game shortcut
+SSHOCK.lnk
