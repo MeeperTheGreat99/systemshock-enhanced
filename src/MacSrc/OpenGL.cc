@@ -359,8 +359,13 @@ void opengl_resize(int width, int height) {
         view_scale = scale_x;
     }
 
-    phys_width = view_scale * logical_width;
-    phys_height = view_scale * logical_height;
+	if (gShockPrefs.doStretchRes) {
+		phys_width = scale_x * logical_width;
+		phys_height = scale_y * logical_height;
+	} else {
+		phys_width = view_scale * logical_width;
+		phys_height = view_scale * logical_height;
+	}
 
     int border_x = width - phys_width;
     int border_y = height - phys_height;
@@ -372,11 +377,13 @@ void opengl_resize(int width, int height) {
     INFO("OpenGL Resize %i %i %i %i", width, height, phys_width, phys_height);
 
     // Redraw the options menu background in the new resolution
+	/*
     extern uchar wrapper_screenmode_hack;
     if (wrapper_screenmode_hack) {
         render_run();
         wrapper_screenmode_hack = false;
     }
+	*/
 }
 
 void opengl_change_palette() { palette_dirty = true; }

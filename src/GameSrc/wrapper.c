@@ -131,6 +131,8 @@ void quit_verify_pushbutton_handler(uchar butid);
 uchar quit_verify_slorker(uchar butid);
 void save_verify_pushbutton_handler(uchar butid);
 uchar save_verify_slorker(uchar butid);
+void menu_verify_pushbutton_handler(uchar butid);
+uchar menu_verify_slorker(uchar butid);
 void free_options_cursor(void);
 
 void input_screen_init(void);
@@ -139,7 +141,6 @@ void sound_screen_init(void);
 void soundopt_screen_init(void);
 void video_screen_init(void);
 void video_screen_master_init(void);
-void renderprefs_screen_init(void);
 
 uint multi_get_curval(uchar type, void *p);
 void multi_set_curval(uchar type, void *p, uint val, void *deal);
@@ -366,7 +367,8 @@ static char *_get_temp_string(int num) {
 			itoa(saved_fov, fovValue, 10);
 			return fovValue;
 		case REF_STR_Fullscreen: return "Fullscreen";
-		case REF_STR_Dynamic: return "Dynamic";
+		case REF_STR_Dynamic: return "Custom";
+		case REF_STR_StretchRes: return "Stretch Res";
 
         case REF_STR_TextFilt: return "Tex Filter";
         case REF_STR_TFUnfil:  return "Unfiltered";
@@ -1291,10 +1293,9 @@ void wrapper_pushbutton_func(uchar butid) {
         verify_screen_init(quit_verify_pushbutton_handler, quit_verify_slorker);
         string_message_info(REF_STR_QuitConfirm);
         break;
-	case MENU_BUTTON:
-		wrapper_panel_close(TRUE);
-		_new_mode = SETUP_LOOP;
-		chg_set_flg(GL_CHG_LOOP);
+	case MENU_BUTTON: // Main Menu
+		verify_screen_init(menu_verify_pushbutton_handler, menu_verify_slorker);
+        message_info("Return to main menu?");
 		break;
 	case RENDERING_BUTTON:
 		video_screen_init();
@@ -1347,6 +1348,16 @@ void save_verify_pushbutton_handler(uchar butid) { do_savegame_guts(savegame_ver
 
 uchar save_verify_slorker(uchar butid) {
     strcpy(comments[savegame_verify], comments[NUM_SAVE_SLOTS]);
+    wrapper_panel_close(TRUE);
+    return TRUE;
+}
+
+void menu_verify_pushbutton_handler(uchar butid) {
+	change_mode_func(0, 0, SETUP_LOOP);
+	wrapper_panel_close(TRUE);
+}
+
+uchar menu_verify_slorker(uchar butid) {
     wrapper_panel_close(TRUE);
     return TRUE;
 }
@@ -1748,6 +1759,13 @@ void fullscreen_dealfunc() {
 	toggleFullscreen(true);
 }
 
+uchar wrapper_stretchres_hack = FALSE;
+void stretchres_dealfunc() {
+    change_mode_func(0, 0, _current_loop);
+    wrapper_stretchres_hack = TRUE;
+    wrapper_panel_close(TRUE);
+}
+
 void detail_dealfunc(uchar det) {
 
     change_detail_level(det);
@@ -2056,6 +2074,12 @@ void renderprefs_screen_init(void)
 		sizeof(gShockPrefs.doFullscreen), &(gShockPrefs.doFullscreen), 2, fullscreen_dealfunc, &r);
 
 	i++;
+	
+	/*
+	standard_button_rect(&r, i, 2, 2, 2);
+	multi_init(i, 's', REF_STR_StretchRes, REF_STR_OffonText, ID_NULL,
+		sizeof(gShockPrefs.doStretchRes), &(gShockPrefs.doStretchRes), 2, stretchres_dealfunc, &r);
+		*/
 
 	standard_button_rect(&r, 5, 2, 2, 2);
 	pushbutton_init(RETURN_BUTTON, 'r', REF_STR_OptionsText + 5, wrapper_pushbutton_func, &r);
@@ -2123,12 +2147,14 @@ void screenmode_screen_init(void) {
     int i;
     char *keys;
 
+	/*
     if (wrapper_screenmode_hack && !(can_use_opengl() && gShockPrefs.doUseOpenGL)) {
         uiHideMouse(NULL);
         render_run();
         uiShowMouse(NULL);
         wrapper_screenmode_hack = FALSE;
     }
+	*/
 
     keys = get_temp_string(REF_STR_KeyEquivs4);
 

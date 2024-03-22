@@ -75,6 +75,7 @@ void digichan_dealfunc(short val);
 void language_change(uchar lang);
 
 void screenmode_screen_init(void);
+void renderprefs_screen_init(void);
 
 void wrapper_start(void (*init)(void));
 
@@ -109,6 +110,7 @@ enum TEMP_STR_ {
 	REF_STR_FOV_Value,
 	REF_STR_Fullscreen,
 	REF_STR_Dynamic,
+	REF_STR_StretchRes,
 
     REF_STR_TextFilt = 0x10000010,
     REF_STR_TFUnfil, // unfiltered

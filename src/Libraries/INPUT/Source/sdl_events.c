@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mouse.h"
 #include "fullsctg.h"
 #include "kpinput.h"
+#include "hkeyfunc.h" // graphics resize
 #include <stdlib.h>
 #include <SDL.h>
 #include <OpenGL.h>
@@ -470,6 +471,10 @@ uchar Ascii2Code[95] = {
     0x32  // ~
 };
 
+uchar sdl_events_resize_hack = TRUE;
+int sdl_events_client_w = 320;
+int sdl_events_client_h = 200;
+
 void pump_events(void) {
     SDL_Event ev;
 
@@ -731,6 +736,9 @@ void pump_events(void) {
         case SDL_WINDOWEVENT:
             switch (ev.window.event) {
             case SDL_WINDOWEVENT_SIZE_CHANGED:
+				sdl_events_resize_hack = TRUE;
+				sdl_events_client_w = ev.window.data1;
+				sdl_events_client_h = ev.window.data2;
                 if (can_use_opengl())
                     opengl_resize(ev.window.data1, ev.window.data2);
                 break;

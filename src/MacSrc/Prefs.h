@@ -60,6 +60,7 @@ typedef struct {
     bool doUseQD;
     bool doUseOpenGL;
 	bool doFullscreen;
+	bool doStretchRes;
     // 0 => unfiltered
     // 1 => bilinear
     // TODO: add trilinear, anisotropic?

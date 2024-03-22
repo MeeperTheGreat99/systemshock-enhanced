@@ -27,6 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "Shock.h"
 #include "ShockBitmap.h"
 #include "2d.h"
+#include "fullsctg.h"
+#include <OpenGL.h>
 
 //--------------------
 //  Globals
@@ -41,14 +43,24 @@ void ChangeScreenSize(int width, int height) {
     INFO("ChangeScreenSize");
 
     SDL_RenderClear(renderer);
+	
+	bool maximized = SDL_GetWindowFlags(window) & SDL_WINDOW_MAXIMIZED;
+	bool fullscreen = getFullscreenActive();
 
-    //extern bool fullscreenActive;
-    //SDL_SetWindowFullscreen(window, fullscreenActive ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-
-    SDL_SetWindowSize(window, width, height);
-    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+	if (fullscreen)
+		exitFullscreen(false);
+	else if (maximized)
+		SDL_RestoreWindow(window);
+	
+	SDL_SetWindowSize(window, width, height);
+	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
     SDL_RenderSetLogicalSize(renderer, width, height);
+	
+	if (fullscreen)
+		enterFullscreen(false);
+	else if (maximized)
+		SDL_MaximizeWindow(window);
 
     SetupOffscreenBitmaps(width, height);
 

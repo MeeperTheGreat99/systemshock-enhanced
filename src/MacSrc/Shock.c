@@ -111,17 +111,13 @@ int main(int argc, char **argv) {
     LoadHotkeyKeybinds();
     LoadMoveKeybinds();
 
-	if (gShockPrefs.doFullscreen)
-		enterFullscreen(false);
-
     // Process some startup arguments
 
     bool show_splash = !CheckArgument("-nosplash");
 
-	if (CheckArgument("-fullscreen"))
-		enterFullscreen(false);
-	if (CheckArgument("-windowed"))
-		exitFullscreen(false);
+	bool shouldFullscreenPref = gShockPrefs.doFullscreen;
+	bool shouldFullscreen = CheckArgument("-fullscreen");
+	bool shouldWindow = CheckArgument("-windowed");
 
     // CC: Modding support! This is so exciting.
 
@@ -130,6 +126,10 @@ int main(int argc, char **argv) {
     // Initialize
 
     init_all();
+	
+	if ((shouldFullscreenPref || shouldFullscreen) && !shouldWindow)
+		enterFullscreen(false);
+	
     setup_init();
 
     gPlayingGame = true;

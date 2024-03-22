@@ -77,8 +77,14 @@ int gr_set_mode (int mode, int clear)
 	grd_mode_cap.w = grd_mode_info[mode].w;
 	grd_mode_cap.h = grd_mode_info[mode].h;
 	if (windowMode) {
-		grd_mode_cap.w = 1920;
-		grd_mode_cap.h = 1080;
+		extern int sdl_events_client_w;
+		extern int sdl_events_client_h;
+		
+		// TODO: live resize
+		//grd_mode_cap.w = sdl_events_client_w;
+		//grd_mode_cap.h = sdl_events_client_h;
+		grd_mode_cap.w = gShockPrefs.doWidth;
+		grd_mode_cap.h = gShockPrefs.doHeight;
 	}
 	
 	// store aspect into capability struct.

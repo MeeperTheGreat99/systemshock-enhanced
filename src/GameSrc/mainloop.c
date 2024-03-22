@@ -97,6 +97,7 @@ void (*exit_modes[])(void) = {screen_exit, fullscreen_exit, NULL, NULL, setup_ex
 void loopmode_switch(short *cmode) {
 #ifdef SVGA_SUPPORT
     extern uchar wrapper_screenmode_hack;
+	extern uchar wrapper_stretchres_hack;
 #endif
 
     // Actually switch mode
@@ -108,8 +109,13 @@ void loopmode_switch(short *cmode) {
         (*enter_modes[*cmode])();
 
 #ifdef SVGA_SUPPORT
-    if (wrapper_screenmode_hack) {
-        wrapper_start(screenmode_screen_init);
+	uchar do_wrapper_hack = _last_mode == GAME_LOOP || _last_mode == FULLSCREEN_LOOP || _last_mode == CYBER_LOOP;
+    if (wrapper_screenmode_hack && do_wrapper_hack) {
+		wrapper_screenmode_hack = FALSE;
+		wrapper_start(screenmode_screen_init);
+    } else if (wrapper_stretchres_hack && do_wrapper_hack) {
+		wrapper_stretchres_hack = FALSE;
+		wrapper_start(renderprefs_screen_init);
     }
 #endif
 }
@@ -142,7 +148,9 @@ void mainloop(int argc, char *argv[]) {
                 loopLine(ML | 0x13, loopmode_switch(&_current_loop));
             }
             chg_unset_flg(ML_CHG_BASE << 3);
-        }
+        } else {
+			
+		}
 #ifdef ALWAYS_SHOW_FR
         fr_show_rate(-1);
 #endif

@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "frintern.h"
 #include "frprotox.h"
 #include "gamescr.h"
-
+#include "Prefs.h"
 
 #ifdef STEREO_SUPPORT
 #include <i6dvideo.h>
@@ -49,9 +49,16 @@ fix inv_convert_y[MAX_CONVERT_TYPES][MAX_USE_MODES];
 
 void gr2ss_mode_hack(bool on) {
 	if (on) {
+		extern int sdl_events_client_w;
+		extern int sdl_events_client_h;
+		
 		char m = 4;
-		int w = 1920;
-		int h = 1080;
+		// TODO: live resize
+		//int w = sdl_events_client_w;
+		//int h = sdl_events_client_h;
+		int w = gShockPrefs.doWidth;
+		int h = gShockPrefs.doHeight;
+		
 		convert_x[convert_type][m] = fix_div(fix_make(w, 0), convert_x[convert_type][0]);
 		convert_y[convert_type][m] = fix_div(fix_make(h, 0), convert_y[convert_type][0]);
 		inv_convert_x[convert_type][m] = fix_div(convert_x[convert_type][0], fix_make(w, 0));
@@ -116,12 +123,16 @@ void ss_scale_string(char *s, short x, short y) {
                 use_font = RES_doubleMediumLEDFont;
             break;
         case 4:
+			/*
             if (f == ttfont)
                 use_font = RES_megaTinyTechFont;
             else if (f == mlfont)
                 use_font = RES_megaMediumLEDFont;
+			*/
+			use_font = ID_NULL;
             break;
         }
+		
 #ifdef STEREO_SUPPORT
         if ((rv == SVGA_CONV_SCREEN) && inp6d_stereo_active) {
             if (use_font == ID_NULL) {

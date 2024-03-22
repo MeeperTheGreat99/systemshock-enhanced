@@ -135,6 +135,7 @@ void SetDefaultPrefs(void) {
     gShockPrefs.doUseOpenGL = false;
     gShockPrefs.doTextureFilter = 0; // unfiltered
 	gShockPrefs.doFullscreen = false; // Windowed mode
+	gShockPrefs.doStretchRes = false; // letterbox
     gShockPrefs.goOnScreenHelp = true;
     gShockPrefs.doGamma = 29;    // Default gamma (29 out of 100).
     gShockPrefs.doWidth = 640;
