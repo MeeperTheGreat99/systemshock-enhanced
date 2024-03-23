@@ -1,0 +1,7 @@
+these are some known, reproducible crashes. if there are no lines below then thats great!
+
+>biomon corruption
+-size exceeding limit causes crash
+-unpausing game causes corruption
+-status.h
+-status.c

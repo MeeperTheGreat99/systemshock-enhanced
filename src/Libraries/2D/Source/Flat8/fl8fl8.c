@@ -78,7 +78,12 @@ void flat8_flat8_ubitmap(grs_bitmap *bm, short x, short y) {
         }
     else
         while (h--) {
-            memmove(m_dst, m_src, w);
+			if (m_dst == NULL || m_src == NULL) {
+				WARN("memmove operation canceled due to one or more NULL pointers");
+				return;
+			}
+			memmove_s(m_dst, w, m_src, w);
+            //memmove(m_dst, m_src, w);
 
             m_src += brow;
             m_dst += grow;

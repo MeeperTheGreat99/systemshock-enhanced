@@ -92,14 +92,14 @@ void draw_shadowed_string(char *s, short x, short y, uchar shadow) {
                 ss_point_convert(&(npt.x), &(npt.y), FALSE);
             gr_set_fcolor(shadow);
             ss_scale_string(s, npt.x - 1, npt.y - 1);
-            ss_scale_string(s, npt.x, npt.y - 1);
+			ss_scale_string(s, npt.x, npt.y - 1);
             ss_scale_string(s, npt.x + 1, npt.y - 1);
             ss_scale_string(s, npt.x, npt.y + 1);
             ss_scale_string(s, npt.x - 1, npt.y + 1);
             ss_scale_string(s, npt.x + 1, npt.y + 1);
             ss_scale_string(s, npt.x - 1, npt.y);
             ss_scale_string(s, npt.x + 1, npt.y);
-            gr_set_fcolor(color);
+			gr_set_fcolor(color);
             ss_scale_string(s, npt.x, npt.y);
         } else
 #endif

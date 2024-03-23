@@ -41,6 +41,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <stdio.h> // printf()
 
+#include "dbg.h"
+
 int gen_font_scale_string(grs_font *f, char *s, short x0, short y0, short w, short h) {
     grs_bitmap bm;             /* character bitmap */
     short *offset_tab;         /* table of character offsets */
@@ -69,9 +71,8 @@ int gen_font_scale_string(grs_font *f, char *s, short x0, short y0, short w, sho
 
     x = x0 << 16;
     y = y0 << 16;
-
-    for (i = 0, del_y = 0; i < f->h; del_y += y_scale, i++)
-        ; /* multiply fix by int, faster ?? */
+	
+	del_y = f->h * y_scale;
     next_y = y + del_y;
 
     while ((c = (uchar)(*s++)) != '\0') {
@@ -86,18 +87,23 @@ int gen_font_scale_string(grs_font *f, char *s, short x0, short y0, short w, sho
         offset = offset_tab[c - f->min];
         bm.w = offset_tab[c - f->min + 1] - offset;
 
-        for (i = 0, next_x = x; i < bm.w; next_x += x_scale, i++)
-            ; /* multiply fix by int, faster ?? */
+		next_x = x + bm.w * x_scale;
 
+		int chX = fix_int(x);
+		int chY = fix_int(y);
+		int chW = fix_int(next_x) - chX;
+		int chH = fix_int(next_y) - chY;
+		
         if (bm.type == BMT_MONO) {
             bm.bits = char_buf + (offset >> 3);
             bm.align = offset & 7;
-            gr_scale_bitmap(&bm, fix_int(x), fix_int(y), fix_int(next_x) - fix_int(x), fix_int(next_y) - fix_int(y));
+			gr_scale_bitmap(&bm, chX, chY, chW, chH);
 
         } else {
             bm.bits = char_buf + offset;
-            gr_scale_bitmap(&bm, fix_int(x), fix_int(y), fix_int(next_x) - fix_int(x), fix_int(next_y) - fix_int(y));
+            gr_scale_bitmap(&bm, chX, chY, chW, chH);
         }
+		
         x = next_x;
     }
     return CLIP_NONE;

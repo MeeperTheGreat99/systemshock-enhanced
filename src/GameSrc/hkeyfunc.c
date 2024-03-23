@@ -1321,6 +1321,15 @@ uchar pause_game_func(ushort keycode, uint32_t context, intptr_t data) {
     }
 
     mouse_look_unpause();
+	
+	// TODO: fix biomon corruption
+	/*
+	if (!full_game_3d) {
+		fullscreen_start();
+		fullscreen_exit();
+		change_svga_screen_mode();
+	}
+	*/
 
     return TRUE;
     /* KLC - not needed for Mac version

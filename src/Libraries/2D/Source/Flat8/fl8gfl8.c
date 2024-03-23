@@ -52,7 +52,12 @@ void flat8_get_flat8_ubitmap(grs_bitmap *bm, short x, short y) {
     src = grd_bm.bits + grow * y + x;
     dst = bm->bits;
     while (h--) {
-        LG_memmove(dst, src, w);
+		if (dst == NULL || src == NULL) {
+			WARN("memmove operation canceled due to one or more NULL pointers");
+			return;
+		}
+		memmove_s(dst, w, src, w);
+        //LG_memmove(dst, src, w);
         src += grow;
         dst += brow;
     }

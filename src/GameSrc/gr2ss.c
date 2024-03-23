@@ -123,13 +123,8 @@ void ss_scale_string(char *s, short x, short y) {
                 use_font = RES_doubleMediumLEDFont;
             break;
         case 4:
-			/*
-            if (f == ttfont)
-                use_font = RES_megaTinyTechFont;
-            else if (f == mlfont)
-                use_font = RES_megaMediumLEDFont;
-			*/
-			use_font = ID_NULL;
+			if (f == ttfont || f == mlfont)
+				use_font = f == ttfont ? RES_tinyTechFont : RES_mediumLEDFont;
             break;
         }
 		
@@ -161,13 +156,26 @@ void ss_scale_string(char *s, short x, short y) {
             gr_pop_canvas();
         } else {
 #endif
-            if (use_font == ID_NULL) {
+			if (use_font == ID_NULL) {
                 short w, h;
                 gr_string_size(s, (short *)&w, (short *)&h);
                 gr_scale_string(s, x, y, SCONV_X(w), SCONV_Y(h));
             } else {
-                gr_set_font((grs_font *)ResLock(use_font));
-                gr_string(s, x, y);
+				if (convert_use_mode == 4 && (f == ttfont || f == mlfont)) {
+					short w, h;
+					uchar use_double_font = gShockPrefs.doWidth >= 640 && gShockPrefs.doHeight >= 480;
+					if (use_font == RES_tinyTechFont && use_double_font)
+						use_font = RES_doubleTinyTechFont;
+					else if (use_font == RES_mediumLEDFont && use_double_font)
+						use_font = RES_doubleMediumLEDFont;
+					gr_set_font((grs_font*)ResLock(use_font));
+					gr_string_size(s, &w, &h);
+					gr_scale_string(s, x, y, SCONV_X(use_double_font ? (w / 2) : w), SCONV_Y(use_double_font ? (h / 2) : h));
+				}
+				else {
+					gr_set_font((grs_font *)ResLock(use_font));
+					gr_string(s, x, y);
+				}
             }
 #ifdef STEREO_SUPPORT
         }

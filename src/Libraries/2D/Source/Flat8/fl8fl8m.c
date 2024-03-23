@@ -87,7 +87,12 @@ int gri_flat8_mask_bitmap(grs_bitmap *bm, short x, short y, grs_stencil *sten) {
                             if (src[i])
                                 dst[i] = src[i];
                     } else {
-                        LG_memmove(dst + xi, src + xi, xf - xi);
+						if (dst + xi == NULL || src + xi == NULL) {
+							WARN("memmove operation canceled due to one or more NULL pointers");
+							return CLIP_NONE;
+						}
+						memmove_s(dst + xi, xf - xi, src + xi, xf - xi);
+                        //LG_memmove(dst + xi, src + xi, xf - xi);
                     }
                 }
             }
