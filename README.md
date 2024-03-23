@@ -52,9 +52,10 @@ Planned and/or WIP Features:
 
 - ~~**_Field of View Slider_**~~ Finished  
 - ~~**_Quick Use/Pickup Key_**~~ Finished  
-- ~~**_Fullscreen Video Option & `-windowed` or `-fullscreen` launch options_**~~ Finished
-- **_Widescreen Resolutions and Custom Width/Height Resolutions_** (Don't expect that anytime soon, I'm quite new to this. But I'll do my best.)  
-- **_Mouselook Pausing Stance Change Fix_** (this is an issue where you cannot lean or change stance while mouselooking horizontally)
+- ~~**_Fullscreen Video Option & `-windowed` or `-fullscreen` launch options_**~~ Finished  
+- **_Widescreen Resolutions and Custom Width/Height Resolutions_** (Not such a far fetched goal these days!)  
+- **_Mouselook Pausing Stance Change Fix_** (This is an issue where you cannot lean or change stance while mouselooking horizontally)
+- **_SSHOCK 2 Mode Toggle_** (Eventually I'll implement the more streamlined control system from System Shock 2 and add it as an option)
 
 Important Requirements
 ======================
@@ -70,7 +71,7 @@ Running
 
 ## From a prebuilt package
 
-Currently, I only have the ability to build for Windows. The releases can be found [here](https://github.com/MeeperTheGreat99/systemshock-enhanced/releases). However, I'll leave a link to the original Shockolate builds as well, [here](https://github.com/Interrupt/systemshock/releases/).
+There will be builds for Windows and Linux, but I don't have a Mac. The available releases can be found [here](https://github.com/MeeperTheGreat99/systemshock-enhanced/releases).
 
 ## From source code
 
@@ -82,7 +83,7 @@ Step 1. Build the dependencies:
 * Linux/Mac: `build_deps.sh` or the CI build scripts in `osx-linux`
 * Other: `build_deps.sh` 
 
-Step 2. Build and run the game itself
+Step 2. Build and run the game itself - Note: Windows users either need to install Make for Windows (That's what I did) or just switch "make" for "mingw32-make" in the command.
 ```
 cmake -G "Unix Makefiles" .
 make systemshock
@@ -122,7 +123,7 @@ Run a fan mission from specific files:
 Controls
 =======
 
-## Movement
+## Movement & View
 
 - `WASD` to move
 - `F` to toggle mouselook
@@ -140,18 +141,18 @@ Controls
 - `MWHEELDOWN` to switch to next weapon
 - `MWHEELUP` to switch to previous weapon
 
-## Interaction
+## World Interaction
 
 - `MOUSE1` to inspect objects
 - `MOUSE1`x2 to use/pickup objects
 - `C` to use/put object into inventory
 
-## MFD (Multifunctional Display)
+## MFDs (Multifunctional Displays) & Neural Interface
 
 - `F1`-`F10` to activate/deactivate MFD panels  
-- `1`-`10` to activate/deactivate hardware implants  
+- `1`-`10` to toggle hardware implants  
 
-## Additional hotkeys
+## Miscellaneous Hotkeys
 
 * `Ctrl+G` cycles between graphics rendering modes  
 * `Ctrl+F` to enable full screen mode  
