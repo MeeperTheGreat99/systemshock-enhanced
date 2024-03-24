@@ -20,32 +20,37 @@ Changes:
 Added Features so far:
 ======================
 
-- **_Toggleable Persistent Mouselook (Keep MLook)_**  
+- **_Persistent Mouselook Toggle (Keep MLook)_**  
 Default: Off  
-Description: Located in the options menu. When on, your mouse will stay locked to the center of the screen when picking up an item or opening a container. I added this because I prefer to play that way, locking and unlocking the mouse manually, and so do some other people. It's mainly for muscle memory actually.
+Location: Options  
+Description: If enabled, your cursor will stay locked to the center of the screen when interacting with anything. If locking/unlocking the mouselook manually is your thing, this is for you.
 
 - **_Keyboard Keypad Support_**  
 Description: Changes in-game keypad binds to use your keyboard's keypad instead of the row of number keys at the top. That way, the number keys are still availible for toggling hardware implants.
 
 - **_Extra Digital Audio Channels_**  
-Default: 32  
-Description: Normally, you may choose from 2, 4, or 8 digital audio channels in the audio options. Now, you may additionally choose 16 or 32 channels. I added this because there are semi-rare cases when all channels are easily filled up, such as the room with all the Z-44 Plastique (TM) on the Storage level. Now I know 32 is totally overkill, but who knows? Maybe someday there will be a reason to have 32 channels.
+Default: 4  
+Location: Audio options  
+Description: Normally, you may choose from 2, 4, or 8 digital audio channels. But this is the 21st century, we have _much_ more than a measily 8 channels available on modern hardware. Now, you may additionally choose 16 or 32 channels. Justifiable, because there are semi-rare cases when all channels are easily filled up, such as the room with all the Z-44 Plastique (TM) on the Storage level. Now I know 32 is totally overkill for ol 'Shock, and so you may ask "why?". And to that I say, science isn't about why. It's about why not.
 
 - **_Field of View Slider_**  
 Default: 80  
-Description: Located in video options menu. Adds an FOV slider that ranges from 70 to 135 degrees.  
-Note: FOV cannot be changed while using the OpenGL renderer. It will stay at the default 80. This is because changing FOV causes a crash in certain areas when using the OpenGL renderer.
+Location: Video preferences  
+Description: A camera field of view slider that ranges from 60 to 120 degrees.  
+Note: ~~FOV cannot be changed while using the OpenGL renderer. It will stay at the default 80. This is because changing FOV causes a crash in certain areas when using the OpenGL renderer.~~ This is no longer an issue. (Yippie!!!)
 
 - **_Main Menu Button_**  
-Description: Located in the pause menu. This button will return you directly to the main menu that is shown upon starting the game. Keep in mind that it will not ask for confirmation and instead will immediately send you there upon clicking it.
+Location: Pause menu  
+Description: This button will send you straight to the main menu that is shown upon starting the game, no detours or restarts. There is now a yes/no confirmation when clicking the button.
 
 - **_Quick Use/Pickup Key_**  
 Default: `C`  
-Description: Adds a key which will instantly pickup and add an object you are looking at to your inventory, or use the object if it cannot be picked up.
+Description: A key which will instantly pickup and add an object you are looking at to your inventory, or use the object if it cannot be picked up.
 
-- **_Fullscreen Video Option_**  
+- **_Fullscreen Toggle_**  
 Default: Off  
-Description: Located in the video prefs menu. Adds a button which toggles fullscreen and saves your preference inside the prefs file. Pressing `Alt+Enter` also saves the new fullscreen state. The launch options, `-fullscreen` or `-windowed` may also be specified when starting the game in order to run in the selected mode. Setting launch options will not change the saved mode in the prefs file.
+Location: Video preferences  
+Description: When clicked, the button toggles the game into or out of a fullscreen window. It also saves your preference. Pressing `Alt+Enter` functions the exact same. The launch options, `-fullscreen` or `-windowed` may also be specified when starting the game in order to force it to run in the desired mode. However, these launch options will not change the saved preference mode.
 
 Planned and/or WIP Features:
 ============================
