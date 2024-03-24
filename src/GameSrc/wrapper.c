@@ -97,10 +97,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define STATUS_HEIGHT 20
 #define STATUS_WIDTH  312
 
-short fovsliderval = 0;
-bool fovtextactive = false;
-int fovtextid = 0;
-
 LGCursor option_cursor;
 grs_bitmap option_cursor_bmap;
 
@@ -122,6 +118,7 @@ int inp6d_real_fov = 60;
 int hack_headset_fov = 30;
 #endif
 int inp6d_curr_fov = 60;
+short fov_slider_value = 0;
 
 errtype music_slots();
 errtype wrapper_do_save();
@@ -364,7 +361,7 @@ static char *_get_temp_string(int num) {
 		case REF_STR_RenderPrefs:   return "Prefs.";
 		case REF_STR_FOV: return "Field of View";
 		case REF_STR_FOV_Value:
-			itoa(saved_fov, fovValue, 10);
+			itoa((int)get_fov(), fovValue, 10);
 			return fovValue;
 		case REF_STR_Fullscreen: return "Fullscreen";
 		case REF_STR_Dynamic: return "Custom";
@@ -1208,8 +1205,7 @@ errtype wrapper_panel_close(uchar clear_message) {
         mfd_force_update_single(i);
     ResUnlock(OPTIONS_FONT);
     resume_game_time();
-	global_update_fov();
-	fovtextactive = false;
+	update_fov();
     return (OK);
 }
 
@@ -1287,7 +1283,6 @@ void wrapper_pushbutton_func(uchar butid) {
         break;
     case RETURN_BUTTON: // Return
         wrapper_panel_close(TRUE);
-		global_update_fov();
         break;
     case QUIT_BUTTON: // Quit
         verify_screen_init(quit_verify_pushbutton_handler, quit_verify_slorker);
@@ -1448,7 +1443,7 @@ void audiolog_dealfunc(short val) {
 }
 #endif
 
-char hack_digi_channels = 4;
+char hack_digi_channels = 1;
 
 void digichan_dealfunc(short val) {
     hack_digi_channels = val;
@@ -1488,17 +1483,8 @@ static void midi_output_dealfunc(short val) {
     (void)val;
 }
 
-short global_fov = 80;
-short saved_fov = 80;
-
 static void fov_slider_dealfunc(short val) {
-	float newval = ((float)val / 100.0f);
-	short maxfov = max_fov;
-	short minfov = min_fov;
-	short newfov = minfov + ((maxfov - minfov) * newval);
-	gShockPrefs.doFov = newfov;
-	saved_fov = newfov;
-	global_fov = newfov;
+	set_fov_slider(val);
 	opanel_redraw(TRUE);
 }
 
@@ -1747,7 +1733,6 @@ static void renderer_dealfunc(bool unused) {
 
     // recalculate menu in case a button needs to be added or removed
 	wrapper_panel_close(TRUE);
-	global_update_fov();
 	wrapper_start(wrapper_init);
 	video_screen_init();
 
@@ -1950,8 +1935,6 @@ void video_screen_init(void) {
     keys = get_temp_string(REF_STR_KeyEquivs3);
     clear_obuttons();
     i = 0;
-
-	global_fov = gShockPrefs.doFov;
 	
 #ifdef USE_OPENGL
     // renderer
@@ -2046,12 +2029,12 @@ void renderprefs_screen_init(void)
 
 	clear_obuttons();
 
-	fovsliderval = 100 * (short)(((float)global_fov - min_fov) / (max_fov - min_fov));
+	fov_slider_value = get_fov_slider();
 	standard_slider_rect(&r, i, 2, 5);
 	r.lr.x += (r.lr.x - r.ul.x);
 	r.ul.y -= 10;
 	r.lr.y -= 10;
-	slider_init(i, REF_STR_FOV, sizeof(fovsliderval), FALSE, &fovsliderval, 100,
+	slider_init(i, REF_STR_FOV, sizeof(fov_slider_value), TRUE, &fov_slider_value, 256,
 		0, fov_slider_dealfunc, &r);
 
 	i++;
@@ -2063,8 +2046,6 @@ void renderprefs_screen_init(void)
 	r.lr.y -= 5;
 	r.ul.y -= 5;
 	textwidget_init(i, BUTTON_COLOR, REF_STR_FOV_Value, &r);
-	fovtextactive = true;
-	fovtextid = i;
 
 	i++;
 	i++;

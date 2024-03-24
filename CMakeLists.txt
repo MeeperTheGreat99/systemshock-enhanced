@@ -280,6 +280,7 @@ set(GAME_SRC
 	src/GameSrc/gamerend.c
 	src/GameSrc/mouselook.c
 	src/GameSrc/fullsctg.c
+	src/GameSrc/fovchange.c
 )
 
 include_directories(

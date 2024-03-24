@@ -517,26 +517,19 @@ void toggle_opengl() {
         case 0: {
             message_info("Switching to OpenGL bilinear rendering");
             gShockPrefs.doTextureFilter = 1;
-			//global_fov = 80;
-            global_fov = gShockPrefs.doFov;
-			global_update_fov();
         } break;
         case 1: {
             message_info("Switching to sofware rendering");
             gShockPrefs.doUseOpenGL = false;
             gShockPrefs.doTextureFilter = 0;
-			global_fov = gShockPrefs.doFov;
-			global_update_fov();
         } break;
         }
     } else {
         message_info("Switching to OpenGL unfiltered");
         gShockPrefs.doUseOpenGL = true;
         gShockPrefs.doTextureFilter = 0;
-		//global_fov = 80;
-        global_fov = gShockPrefs.doFov;
-		global_update_fov();
     }
+	update_fov();
     SavePrefs();
 }
 

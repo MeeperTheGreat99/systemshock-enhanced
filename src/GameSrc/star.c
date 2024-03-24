@@ -312,6 +312,13 @@ void star_render(void) {
         v.gZ = ((fix)std_vec[i].z) << 1;
 
         s = star_transform_point(&v);
+		if (!s || s == NULL) {
+			WARN("tried to use a NULL g3s_point* s in star_render!!!");
+			if(use_opengl()) {
+				opengl_end_stars();
+			}
+			return;
+		}
 
         if (s->codes == 0) {
             x = fix_rint(s->sx);
@@ -442,6 +449,10 @@ g3s_phandle star_transform_point(g3s_vector *v) {
     fix temp;
 
     getpnt(point);
+	if (!point || point == NULL) {
+		WARN("tried to use a NULL g3s_point* point in star_transform_point!!!");
+		return NULL;
+	}
     point->p3_flags = 0;
 
     // third column (z)

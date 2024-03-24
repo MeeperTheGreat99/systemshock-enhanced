@@ -163,6 +163,11 @@ errtype shutdown_hack_cameras() {
 }
 
 errtype do_screen_static() {
+	if (!static_bitmap || static_bitmap == NULL) {
+		WARN("tried to use a NULL grs_bitmap* static_bitmap in do_screen_static!!!");
+		return (ERR_NULL);
+	}
+	
     if (!screen_static_drawn)
         draw_full_static(static_bitmap, GRAY_8_BASE);
     return (OK);
