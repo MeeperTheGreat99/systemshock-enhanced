@@ -40,6 +40,4 @@ void weapon_mfd_for_reload(void);
 void mfd_setup_elevator(ushort levmask, ushort reachmask, ushort curlevel, uchar special);
 void mfd_elevator_expose(MFD *mfd, ubyte control);
 
-errtype mfd_keypad_input(MFD *m, char b_num);
-
 #endif

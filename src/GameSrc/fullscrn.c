@@ -59,8 +59,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "game_screen.h" // was screen.h?
 #include "Shock.h"
 
-#include "fovchange.h"
-
 #ifdef NOT_YET // KLC stereo
 
 #include <config.h>
@@ -203,6 +201,10 @@ void change_svga_cursors() {
     ss_set_hack_mode(0, &temp);
 }
 
+uchar enable_experimental_resolution = FALSE;
+int dynamic_width = 1280;
+int dynamic_height = 720;
+
 void change_svga_screen_mode() {
     extern uchar redraw_paused;
 
@@ -231,12 +233,34 @@ void change_svga_screen_mode() {
                      else
              */
             cur_m = svga_mode_data[mode_id];
+			
             retval = gr_set_mode(cur_m, TRUE);
+			
+			// Meeper - resolution shenanigans from gr2ss.c
+			if (enable_experimental_resolution) {
+				convert_x[convert_type][mode_id] = fix_div(fix_make(dynamic_width, 0), fix_make(320, 0));
+				convert_y[convert_type][mode_id] = fix_div(fix_make(dynamic_height, 0), fix_make(200, 0));
+				inv_convert_x[convert_type][mode_id] = fix_div(fix_make(320, 0), fix_make(dynamic_width, 0));
+				inv_convert_y[convert_type][mode_id] = fix_div(fix_make(200, 0), fix_make(dynamic_height, 0));
+			
+				/* so-called "wacky fix point compensation" - don't know how it
+				works but it seems important so I copied it */
+				if (convert_x[convert_type][mode_id] & 0xF)
+					convert_x[convert_type][mode_id]++;
+				if (convert_y[convert_type][mode_id] & 0xF)
+					convert_y[convert_type][mode_id]++;
+				if (inv_convert_x[convert_type][mode_id] & 0xF)
+					inv_convert_x[convert_type][mode_id]++;
+				if (inv_convert_y[convert_type][mode_id] & 0xF)
+					inv_convert_y[convert_type][mode_id]++;
+			}
+			
             if (retval == -1) {
                 mode_id = (mode_id + 1) % 5;
             }
         }
         convert_use_mode = mode_id;
+		
         cur_w = grd_mode_cap.w;
         cur_h = grd_mode_cap.h;
 
@@ -334,18 +358,6 @@ void change_svga_screen_mode() {
     // KLC	gamma_dealfunc(QUESTVAR_GET(GAMMACOR_QVAR));
     gamma_dealfunc(gShockPrefs.doGamma);
     redraw_paused = TRUE;
-}
-
-void global_update_fov()
-{
-	if (full_game_3d)
-		fullscreen_start();
-	else
-	{
-		fullscreen_start();
-		fullscreen_exit();
-		change_svga_screen_mode();
-	}
 }
 
 void fullscreen_start() {

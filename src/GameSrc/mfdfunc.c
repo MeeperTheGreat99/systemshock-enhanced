@@ -82,7 +82,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mfdfunc.h"
 #include "mfdgames.h"
 #include "shodan.h"
-#include "keypadinput.h"
 
 #define MFD_SHIELD_FUNC 19
 
@@ -2462,7 +2461,7 @@ typedef struct _keypad_data {
 uchar keypad_num(int b);
 char *keypad_name(int b, char *buf);
 char *mfd_keypad_assemble(keypad_data_type *keypad_data, char *buf);
-//errtype mfd_keypad_input(MFD *m, char b_num); now declared in mfdfunc.h
+errtype mfd_keypad_input(MFD *m, char b_num);
 uchar keypad_hotkey_func(ushort keycode, uint32_t context, intptr_t data);
 uchar mfd_keypad_handler(MFD *m, uiEvent *ev);
 uchar mfd_keypad_button_handler(MFD *mfd, LGPoint bttn, uiEvent *ev, void *data);
@@ -2569,31 +2568,6 @@ errtype mfd_keypad_input(MFD *mfd, char b_num) {
     }
     mfd_notify_func(MFD_KEYPAD_FUNC, MFD_INFO_SLOT, FALSE, MFD_ACTIVE, TRUE);
     return (OK);
-}
-
-// keypad input function, which is called from sdl_events.c when a key on the IRL keypad is pressed.
-// here it will call mfd_keypad_input to tell shock which keypad key was pressed.
-void keypadinputdown(int key)
-{
-	extern MFD mfd[];
-	int m = NUM_MFDS;
-	// this switch separates normal keypad keys with the "clear" and "backspace" keys, which are * and - respectively.
-	// this is because mfd_keypad_input interprets the clear button as 11 and backspace as 10.
-	// conveniently so, as i can make an array with a length of 12 to represent keys 0-9, and 2 more slots
-	// for clear and backspace. because of this, the indexes all line up.
-	switch (key)
-	{
-	case 10:
-	case 11:
-		break;
-	default:
-		key = key - 48 + '0';
-		break;
-	}
-	// ensure that a keypad is actually availible for input. no harm done if you input without one open, but it's better
-	// to not hear keypad sounds when you don't have a keypad window open and decide to press one of the keys
-	if (mfd_yield_func(MFD_KEYPAD_FUNC, &m))
-		mfd_keypad_input(&mfd[m], key);
 }
 
 uchar keypad_hotkey_func(ushort keycode, uint32_t context, intptr_t data) {

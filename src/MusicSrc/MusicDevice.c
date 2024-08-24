@@ -217,7 +217,7 @@ static void AdlMidiSetupMode(MusicDevice *dev, MusicMode mode)
     if (!adev || !adev->dev.isOpen) return;
 
     //Use sound bank 45 for res/sound/sblaster, 0 for res/sound/genmidi
-    adl_setBank(adev->adl, (mode == Music_SoundBlaster) ? 45 : 0);
+	adl_openBankFile(adev->adl, "res/CIT.WOPL");
 }
 
 static void AdlMidiReset(MusicDevice *dev)
@@ -236,11 +236,13 @@ static void AdlMidiGenerate(MusicDevice *dev, short *samples, int numframes)
     const int numSamples = numframes * 2;
     adl_generate(adev->adl, numSamples, samples);
     // ugly hack: libadlmidi has quiet output, so double all values
+	/*
     short *sample = samples;
     for (int i = 0; i < numSamples; ++i, ++sample)
     {
         *sample *= 2;
     }
+	*/
 }
 
 static void AdlMidiSendNoteOff(MusicDevice *dev, int channel, int note, int vel)

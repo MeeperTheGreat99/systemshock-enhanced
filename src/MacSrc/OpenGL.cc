@@ -34,7 +34,6 @@ extern "C" {
 #include "faketime.h"
 #include "render.h"
 #include "wares.h"
-#include "fovchange.h"
 
 extern SDL_Renderer *renderer;
 extern SDL_Palette *sdlPalette;
@@ -75,7 +74,6 @@ struct FrameBuffer {
 static Shader textureShaderProgram;
 static Shader colorShaderProgram;
 static Shader starShaderProgram;
-static Shader hdrShaderProgram;
 
 static FrameBuffer backupBuffer;
 
@@ -317,7 +315,6 @@ int init_opengl() {
     CreateShader("main.vert", "texture.frag", &textureShaderProgram);
     CreateShader("main.vert", "color.frag", &colorShaderProgram);
     CreateShader("main.vert", "star.frag", &starShaderProgram);
-	CreateShader("main.vert", "hdr.frag", &hdrShaderProgram);
 
     glGenTextures(1, &dynTexture);
 
@@ -506,23 +503,17 @@ void toggle_opengl() {
         case 0: {
             message_info("Switching to OpenGL bilinear rendering");
             gShockPrefs.doTextureFilter = 1;
-			global_fov = 80;
-			global_update_fov();
         } break;
         case 1: {
             message_info("Switching to sofware rendering");
             gShockPrefs.doUseOpenGL = false;
             gShockPrefs.doTextureFilter = 0;
-			global_fov = gShockPrefs.doFov;
-			global_update_fov();
         } break;
         }
     } else {
         message_info("Switching to OpenGL unfiltered");
         gShockPrefs.doUseOpenGL = true;
         gShockPrefs.doTextureFilter = 0;
-		global_fov = 80;
-		global_update_fov();
     }
     SavePrefs();
 }
@@ -559,7 +550,7 @@ static bool opengl_cache_texture(CachedTexture toCache, grs_bitmap *bm) {
         // We have enough room, generate the new texture
         glGenTextures(1, &toCache.texture);
         bind_texture(toCache.texture);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bm->w, bm->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, toCache.converted->pixels);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bm->w, bm->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, toCache.converted->pixels);
 
         texturesByBitsPtr[(uint64_t)bm->bits | ((uint64_t)bm->w << 32u) | ((uint64_t)bm->h << 48u)] = toCache;
         return true;

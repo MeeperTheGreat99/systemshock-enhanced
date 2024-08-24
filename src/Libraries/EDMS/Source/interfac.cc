@@ -250,7 +250,7 @@ void EDMS_holistic_teleport(physics_handle ph, State *s) {
 
         //	First, get rid of the collision hash reference (in state since frame is over)...
         //	=====================================================
-		state_delete_object(on);
+        state_delete_object(on);
 
         //	Now move the thing...
         //	=====================
@@ -300,12 +300,24 @@ void EDMS_holistic_teleport(physics_handle ph, State *s) {
         }
 
         //	Restart collisions on it...
-        //	===========================
+        //	===========================   
         state_write_object(on);
 
         // Gee, I hope that that is a good location, sunny, and free of solid objects...
         // ==================================================
     }
+}
+
+// Meeper - simple fix for mouselook lean freeze bug, the funny thing is I don't even understand it myself
+void EDMS_mouselook(physics_handle ph, int lookx) {
+	int on;
+	State current_state;
+	
+	on = physics_handle_to_object_number(ph);
+	EDMS_get_state(ph, &current_state);
+
+    S[on][3][0].fix_to(current_state.alpha + lookx);
+    S[on][3][1] = fix_zero;
 }
 
 //	Here we exclude objects from hitting each specific others...

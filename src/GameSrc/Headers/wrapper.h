@@ -103,21 +103,26 @@ enum TEMP_STR_ {
     REF_STR_Renderer = 0x10000000,
     REF_STR_Software,
     REF_STR_OpenGL,
-	REF_STR_Rendering,
-	REF_STR_RenderPrefs,
-	REF_STR_FOV,
-	REF_STR_FOV_Value,
-	REF_STR_Fullscreen,
 
     REF_STR_TextFilt = 0x10000010,
     REF_STR_TFUnfil, // unfiltered
     REF_STR_TFBilin, // bilinear
+	
+	REF_STR_Rendering,
+	REF_STR_Preferences,
+	REF_STR_Fullscrn,
+	REF_STR_FOV,
+	REF_STR_FOVValue,
 
     REF_STR_MousLook = 0x11000000,
     REF_STR_MousNorm,
     REF_STR_MousInv,
-	REF_STR_Persist_MLook,
-
+    REF_STR_MousPers,
+    REF_STR_Mouse,
+	
+	REF_STR_InptSchm = 0x12000000,
+	REF_STR_InptShk1,
+	REF_STR_InptShk2,
 	REF_STR_MainMenu,
 	REF_STR_Digichan,
 

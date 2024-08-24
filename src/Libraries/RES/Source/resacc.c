@@ -411,11 +411,11 @@ void ResDelete(Id id) {
 
 bool ResCheckId(Id id) {
     if (id < ID_MIN) {
-        DEBUG("%s: id $%x invalid", __FUNCTION__, id);
+        WARN("%s: id $%x invalid", __FUNCTION__, id);
         return false;
     }
     if (id > resDescMax) {
-        DEBUG("%s: id $%x exceeds table", __FUNCTION__, id);
+        WARN("%s: id $%x exceeds table", __FUNCTION__, id);
         return false;
     }
     return true;

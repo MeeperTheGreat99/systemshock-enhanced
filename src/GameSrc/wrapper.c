@@ -56,9 +56,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "olhext.h"
 #include "Xmi.h"
 #include "Prefs.h"
-#include "fr3d.h"
-#include "fovchange.h"
-#include "fullscrntogg.h"
 
 #include "OpenGL.h"
 
@@ -83,9 +80,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SCREENMODE_BUTTON    9
 #define HEAD_RECENTER_BUTTON 10
 #define HEADSET_BUTTON       11
-#define RENDERING_BUTTON     12
-#define MENU_BUTTON			 13
-#define RENDER_PREFS_BUTTON  14
+#define MENU_BUTTON          12
+#define MOUSELOOK_BUTTON     13
+#define MOUSE_BUTTON         14
+#define VIDEORENDER_BUTTON   15
+#define VIDEOPREFS_BUTTON    16
 
 #define MOUSE_DOWN (MOUSE_LDOWN | MOUSE_RDOWN | UI_MOUSE_LDOUBLE)
 #define MOUSE_UP   (MOUSE_LUP | MOUSE_RUP)
@@ -96,10 +95,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define STATUS_Y      1
 #define STATUS_HEIGHT 20
 #define STATUS_WIDTH  312
-
-short fovsliderval = 0;
-bool fovtextactive = false;
-int fovtextid = 0;
 
 LGCursor option_cursor;
 grs_bitmap option_cursor_bmap;
@@ -122,6 +117,7 @@ int inp6d_real_fov = 60;
 int hack_headset_fov = 30;
 #endif
 int inp6d_curr_fov = 60;
+int hack_fov = 80 - MIN_FOV;
 
 errtype music_slots();
 errtype wrapper_do_save();
@@ -131,6 +127,8 @@ void quit_verify_pushbutton_handler(uchar butid);
 uchar quit_verify_slorker(uchar butid);
 void save_verify_pushbutton_handler(uchar butid);
 uchar save_verify_slorker(uchar butid);
+void menu_verify_pushbutton_handler(uchar butid);
+uchar menu_verify_slorker(uchar butid);
 void free_options_cursor(void);
 
 void input_screen_init(void);
@@ -138,8 +136,10 @@ void joystick_screen_init(void);
 void sound_screen_init(void);
 void soundopt_screen_init(void);
 void video_screen_init(void);
-void video_screen_master_init(void);
-void renderprefs_screen_init(void);
+void mouselook_screen_init(void);
+void mouse_screen_init(void);
+void videorender_screen_init(void);
+void videoprefs_screen_init(void);
 
 uint multi_get_curval(uchar type, void *p);
 void multi_set_curval(uchar type, void *p, uint val, void *deal);
@@ -319,7 +319,7 @@ void verify_screen_init(void (*verify)(uchar butid), slorker slork);
 
 #define OPT_SLIDER_BAR REF_IMG_BeamSetting
 
-#define MAX_OPTION_BUTTONS 15
+#define MAX_OPTION_BUTTONS 17
 #define BR(i) (OButtons[i].rect)
 
 #ifdef STATIC_BUTTON_STORE
@@ -351,39 +351,37 @@ uchar fv;
 
 #define MIDI_OUT_STR_SIZE 1024
 static char MIDI_STR_BUFFER[MIDI_OUT_STR_SIZE];
-
-char fovtext[20];
+static char fov_value_buffer[32];
 
 static char *_get_temp_string(int num) {
     switch (num) {
         case REF_STR_Renderer: return "Renderer";
         case REF_STR_Software: return "Software";
         case REF_STR_OpenGL:   return "OpenGL";
-		case REF_STR_Rendering:   return "Rendering";
-		case REF_STR_RenderPrefs:   return "Prefs.";
-		case REF_STR_FOV: return "Field of View";
-		case REF_STR_FOV_Value:
-			memset(fovtext, 0, sizeof(fovtext));
-			sprintf(fovtext, "%d", saved_fov);
-			return fovtext;
-		case REF_STR_Fullscreen: return "Fullscreen";
 
         case REF_STR_TextFilt: return "Tex Filter";
         case REF_STR_TFUnfil:  return "Unfiltered";
         case REF_STR_TFBilin:  return "Bilinear";
+		
+		case REF_STR_Rendering: return "Rendering";
+		case REF_STR_Preferences: return "Prefs";
+		case REF_STR_Fullscrn: return "Fullscreen";
+		case REF_STR_FOV:      return "Field of View";
 
         case REF_STR_MousLook: return "Mouselook";
         case REF_STR_MousNorm: return "Normal";
         case REF_STR_MousInv:  return "Inverted";
-		case REF_STR_Persist_MLook:  return "Keep MLook";
-
+        case REF_STR_MousPers: return "Persistent";
+        case REF_STR_Mouse:    return "Mouse";
+		
+		case REF_STR_InptSchm: return "Ctrl Scheme";
+		case REF_STR_InptShk1: return "SShock 1";
+		case REF_STR_InptShk2: return "SShock 2";
+		case REF_STR_MainMenu: return "Main Menu";
 		case REF_STR_Digichan: return "2";
 		case REF_STR_Digichan + 1: return "4";
 		case REF_STR_Digichan + 2: return "8";
 		case REF_STR_Digichan + 3: return "16";
-		case REF_STR_Digichan + 4: return "32";
-
-		case REF_STR_MainMenu: return "Main Menu";
 
         case REF_STR_Seqer:    return "Midi Player";
         case REF_STR_ADLMIDI:  return "ADLMIDI";
@@ -401,7 +399,10 @@ static char *_get_temp_string(int num) {
         MIDI_STR_BUFFER[0] = '\0';
         GetOutputNameXMI(midiOutputIndex, &MIDI_STR_BUFFER[0], MIDI_OUT_STR_SIZE);
         return &MIDI_STR_BUFFER[0];
-    }
+    } else if (num == REF_STR_FOVValue) {
+		sprintf(fov_value_buffer, "Field of View - %d deg.", gShockPrefs.doFieldOfView);
+		return &fov_value_buffer[0];
+	}
 
     return get_temp_string(num);
 }
@@ -729,7 +730,7 @@ uchar multi_handler(uiEvent *ev, uchar butid) {
         else if (ev->subtype & MOUSE_RDOWN)
             delta = st->num_opts - 1;
     } else if (ev->type == UI_EVENT_KBD_COOKED) {
-	short code = ev->cooked_key_data.code;
+    short code = ev->cooked_key_data.code;
         if (tolower(code & 0xFF) == st->keyeq) {
             if (isupper(code & 0xFF))
                 delta = st->num_opts - 1;
@@ -929,7 +930,7 @@ uchar textlist_handler(uiEvent *ev, uchar butid) {
         }
         return TRUE;
     } else if (ev->type == UI_EVENT_KBD_COOKED) {
-	short code = ev->cooked_key_data.code;
+    short code = ev->cooked_key_data.code;
         char k = code & 0xFF;
         uint keycode = code & ~KB_FLAG_DOWN;
         uchar special = ((code & KB_FLAG_SPECIAL) != 0);
@@ -1206,8 +1207,6 @@ errtype wrapper_panel_close(uchar clear_message) {
         mfd_force_update_single(i);
     ResUnlock(OPTIONS_FONT);
     resume_game_time();
-	global_update_fov();
-	fovtextactive = false;
     return (OK);
 }
 
@@ -1261,8 +1260,8 @@ void wrapper_pushbutton_func(uchar butid) {
     case INPUT_BUTTON: // Input
         input_screen_init();
         break;
-    case VIDEO_BUTTON: // Video
-		video_screen_master_init();
+    case VIDEO_BUTTON: // Input
+        video_screen_init();
         break;
 #ifdef SVGA_SUPPORT
     case SCREENMODE_BUTTON: // Input
@@ -1285,25 +1284,34 @@ void wrapper_pushbutton_func(uchar butid) {
         break;
     case RETURN_BUTTON: // Return
         wrapper_panel_close(TRUE);
-		global_update_fov();
         break;
     case QUIT_BUTTON: // Quit
         verify_screen_init(quit_verify_pushbutton_handler, quit_verify_slorker);
         string_message_info(REF_STR_QuitConfirm);
         break;
 	case MENU_BUTTON:
-		wrapper_panel_close(TRUE);
-		_new_mode = SETUP_LOOP;
-		chg_set_flg(GL_CHG_LOOP);
+		verify_screen_init(menu_verify_pushbutton_handler, menu_verify_slorker);
+        message_info("Return to main menu?");
+        break;
+    case MOUSELOOK_BUTTON:
+        mouselook_screen_init();
+        break;
+    case MOUSE_BUTTON:
+        mouse_screen_init();
+        break;
+	case VIDEORENDER_BUTTON:
+		videorender_screen_init();
 		break;
-	case RENDERING_BUTTON:
-		video_screen_init();
-		break;
-	case RENDER_PREFS_BUTTON:
-		renderprefs_screen_init();
+	case VIDEOPREFS_BUTTON:
+		videoprefs_screen_init();
 		break;
     }
     return;
+}
+
+void fullscreen_pushbutton_func(uchar butid) {
+	extern void toggleFullScreen(void);
+	toggleFullScreen();
 }
 
 void wrapper_init(void) {
@@ -1314,16 +1322,14 @@ void wrapper_init(void) {
     keyequivs = get_temp_string(REF_STR_KeyEquivs0);
 
     clear_obuttons();
-	
     for (i = 0; i < 8; i++) {
         standard_button_rect(&r, i, 2, 3, 5);
         pushbutton_init(i, keyequivs[i], REF_STR_WrapperText + i, wrapper_pushbutton_func, &r);
     }
-	standard_button_rect(&r, 8, 2, 3, 5);
-	pushbutton_init(MENU_BUTTON, 'm', REF_STR_MainMenu, wrapper_pushbutton_func, &r);
-
-	
-
+    
+    standard_button_rect(&r, i, 2, 3, 5);
+    pushbutton_init(MENU_BUTTON, 'm', REF_STR_MainMenu, wrapper_pushbutton_func, &r);
+    i++;
 #ifdef DEMO
     dim_pushbutton(LOAD_BUTTON);
     dim_pushbutton(SAVE_BUTTON);
@@ -1349,6 +1355,17 @@ uchar save_verify_slorker(uchar butid) {
     strcpy(comments[savegame_verify], comments[NUM_SAVE_SLOTS]);
     wrapper_panel_close(TRUE);
     return TRUE;
+}
+
+void menu_verify_pushbutton_handler(uchar butid) {
+    wrapper_panel_close(TRUE);
+	_new_mode = SETUP_LOOP;
+    chg_set_flg(GL_CHG_LOOP);
+}
+
+uchar menu_verify_slorker(uchar butid) {
+	wrapper_panel_close(TRUE);
+	return TRUE;
 }
 #pragma enable_message(202)
 
@@ -1437,7 +1454,7 @@ void audiolog_dealfunc(short val) {
 }
 #endif
 
-char hack_digi_channels = 4;
+char hack_digi_channels = 3;
 
 void digichan_dealfunc(short val) {
     hack_digi_channels = val;
@@ -1452,11 +1469,8 @@ void digichan_dealfunc(short val) {
         cur_digi_channels = 8;
         break;
 	case 3:
-		cur_digi_channels = 16;
-		break;
-	case 4:
-		cur_digi_channels = 32;
-		break;
+        cur_digi_channels = 16;
+        break;
     }
     QUESTVAR_SET(DIGI_CHANNELS_QVAR, hack_digi_channels);
     // snd_set_digital_channels(cur_digi_channels);
@@ -1477,20 +1491,6 @@ static void midi_output_dealfunc(short val) {
     (void)val;
 }
 
-short global_fov = 80;
-short saved_fov = 80;
-
-static void fov_slider_dealfunc(short val) {
-	float newval = ((float)val / 100.0f);
-	short maxfov = max_fov;
-	short minfov = min_fov;
-	short newfov = minfov + ((maxfov - minfov) * newval);
-	gShockPrefs.doFov = newfov;
-	saved_fov = newfov;
-	global_fov = gShockPrefs.doUseOpenGL ? 80 : newfov;
-	opanel_redraw(TRUE);
-}
-
 #pragma enable_message(202)
 
 #define SLIDER_OFFSET_3 0
@@ -1503,8 +1503,8 @@ void soundopt_screen_init() {
 
     standard_button_rect(&r, i, 2, 2, 5);
     retkey = tolower(get_temp_string(REF_STR_AilThreeText)[0]);
-	multi_init(i, retkey, REF_STR_AilThreeText, REF_STR_Digichan, ID_NULL, sizeof(hack_digi_channels),
-               &hack_digi_channels, 5, digichan_dealfunc, &r);
+    multi_init(i, retkey, REF_STR_AilThreeText, REF_STR_Digichan, ID_NULL, sizeof(hack_digi_channels),
+               &hack_digi_channels, 4, digichan_dealfunc, &r);
     i++;
 
     standard_button_rect(&r, i, 2, 2, 5);
@@ -1733,23 +1733,10 @@ static void renderer_dealfunc(bool unused) {
         opanel_redraw(FALSE);
     }
     uiShowMouse(NULL);
-
     // recalculate menu in case a button needs to be added or removed
-	wrapper_panel_close(TRUE);
-	global_update_fov();
-	wrapper_start(wrapper_init);
-	video_screen_init();
-
+    videorender_screen_init();
     // suppress compiler warning
     (void)unused;
-}
-
-void fullscreen_dealfunc()
-{
-	if (gShockPrefs.doFullscreen)
-		enterFullscreen(false);
-	else
-		exitFullscreen(false);
 }
 
 void detail_dealfunc(uchar det) {
@@ -1802,6 +1789,19 @@ void headset_fov_dealfunc(int hackval) {
 void olh_dealfunc(uchar olh) {
     toggle_olh_func(0, 0, 0);
 }
+
+uchar lazy_dont_recenter_mouse_hack = FALSE;
+void fov_dealfunc(int val) {
+	gShockPrefs.doFieldOfView = hack_fov + MIN_FOV;
+	
+	lazy_dont_recenter_mouse_hack = TRUE;
+	
+	change_svga_screen_mode();
+	wrapper_panel_close(FALSE);
+	wrapper_start(videoprefs_screen_init);
+	
+	lazy_dont_recenter_mouse_hack = FALSE;
+}
 #pragma enable_message(202)
 
 #ifdef STEREO_SUPPORT
@@ -1819,7 +1819,7 @@ void joystick_type_func(ushort new_joy_type) {
 
 void joystick_screen_init(void) {
     LGRect r;
-    int i = 0;
+    int i;
     char *keys;
     extern uchar inp6d_headset;
     uchar sliderbase;
@@ -1827,6 +1827,7 @@ void joystick_screen_init(void) {
     extern uchar joystick_count;
     keys = get_temp_string(REF_STR_KeyEquivs6);
     clear_obuttons();
+	i = 0;
 
     standard_button_rect(&r, i, 2, 2, 1);
     multi_init(i, keys[i], REF_STR_JoystickType, REF_STR_JoystickTypes, ID_NULL, sizeof(wrap_joy_type),
@@ -1863,46 +1864,28 @@ void joystick_button_func(uchar butid) { joystick_screen_init(); }
 
 void input_screen_init(void) {
     LGRect r;
-    char *keys;
-    int i = 0;
-    uchar sliderbase;
-    extern uchar inp6d_headset;
+    int i;
 
-    keys = get_temp_string(REF_STR_KeyEquivs1);
     clear_obuttons();
-
+    i = 0;
+	
     standard_button_rect(&r, i, 2, 2, 1);
-    r.ul.x -= 1;
-    multi_init(i, keys[0], REF_STR_OptionsText + 0, REF_STR_OffonText, REF_STR_PopupCursFeedback, sizeof(popup_cursors),
-               &popup_cursors, 2, NULL, &r);
+    //r.ul.x -= 1;
+    pushbutton_init(MOUSELOOK_BUTTON, 'l', REF_STR_MousLook, wrapper_pushbutton_func, &r);
     i++;
-
+    
     standard_button_rect(&r, i, 2, 2, 1);
-    multi_init(i, keys[1], REF_STR_OptionsText + 1, REF_STR_MouseHand, REF_STR_HandFeedback,
-               sizeof(player_struct.questvars[MOUSEHAND_QVAR]), &player_struct.questvars[MOUSEHAND_QVAR], 2,
-               mousehand_dealfunc, &r);
+    //r.ul.x -= 1;
+    pushbutton_init(MOUSE_BUTTON, 'm', REF_STR_Mouse, wrapper_pushbutton_func, &r);
     i++;
-
-    standard_slider_rect(&r, i, 2, 1);
-    r.ul.x -= 1;
-    sliderbase = ((r.lr.x - r.ul.x - 3) * (FIX_UNIT / 3)) / USHRT_MAX;
-    slider_init(i, REF_STR_DoubleClick, sizeof(ushort), FALSE, &player_struct.questvars[DCLICK_QVAR], USHRT_MAX,
-                sliderbase, dclick_dealfunc, &r);
-    i++;
-
-    standard_button_rect(&r, i, 2, 2, 1);
-    r.ul.x -= 1;
-    pushbutton_init(i, keys[2], REF_STR_Joystick, joystick_button_func, &r);
-    i++;
-
-    standard_button_rect(&r, i, 2, 2, 1);
-    r.ul.x -= 1;
-    multi_init(i, keys[3], REF_STR_MousLook, REF_STR_MousNorm, ID_NULL,
-               sizeof(gShockPrefs.goInvertMouseY), &gShockPrefs.goInvertMouseY, 2, NULL, &r);
+	
+	standard_button_rect(&r, i, 2, 2, 1);
+    multi_init(i, 'i', REF_STR_InptSchm, REF_STR_InptShk1, ID_NULL,
+               sizeof(gShockPrefs.goInputScheme), &gShockPrefs.goInputScheme, 2, NULL, &r);
     i++;
 
     standard_button_rect(&r, 5, 2, 2, 1);
-    pushbutton_init(RETURN_BUTTON, keys[3], REF_STR_OptionsText + 5, wrapper_pushbutton_func, &r);
+    pushbutton_init(RETURN_BUTTON, 'r', REF_STR_OptionsText + 5, wrapper_pushbutton_func, &r);
 
     // FIXME: Cannot pass a keycode with modifier flags as uchar
     keywidget_init(QUIT_BUTTON, /*KB_FLAG_ALT |*/ 'x', wrapper_pushbutton_func);
@@ -1922,7 +1905,100 @@ void gamma_slider_dealfunc(ushort gamma_qvar) {
 }
 
 void video_screen_init(void) {
+	LGRect r;
+    int i;
+
+    clear_obuttons();
+	i = 0;
+    
+    standard_button_rect(&r, i, 2, 2, 1);
+    pushbutton_init(VIDEORENDER_BUTTON, 'e', REF_STR_Rendering, wrapper_pushbutton_func, &r);
+    i++;
+	
+	standard_button_rect(&r, i, 2, 2, 1);
+    pushbutton_init(VIDEOPREFS_BUTTON, 'p', REF_STR_Preferences, wrapper_pushbutton_func, &r);
+    i++;
+	
+    standard_button_rect(&r, 5, 2, 2, 1);
+    pushbutton_init(RETURN_BUTTON, 'r', REF_STR_OptionsText + 5, wrapper_pushbutton_func, &r);
+
+    // FIXME: Cannot pass a keycode with modifier flags as uchar
+    keywidget_init(QUIT_BUTTON, /*KB_FLAG_ALT |*/ 'x', wrapper_pushbutton_func);
+
+    opanel_redraw(TRUE);
+}
+
+void mouselook_screen_init(void) {
     LGRect r;
+    int i;
+    
+    clear_obuttons();
+    i = 0;
+	
+    standard_button_rect(&r, i, 2, 2, 1);
+    multi_init(i, 'm', REF_STR_MousLook, REF_STR_MousNorm, ID_NULL,
+               sizeof(gShockPrefs.goInvertMouseY), &gShockPrefs.goInvertMouseY, 2, NULL, &r);
+    i++;
+    
+    standard_button_rect(&r, i, 2, 2, 1);
+    multi_init(i, 'p', REF_STR_MousPers, REF_STR_OffonText, ID_NULL,
+               sizeof(gShockPrefs.goPersistMouselook), &gShockPrefs.goPersistMouselook, 2, NULL, &r);
+    i++;
+    
+    // return (fixed at position 5)
+    standard_button_rect(&r, 5, 2, 2, 1);
+    pushbutton_init(RETURN_BUTTON, 'r', REF_STR_OptionsText + 5, wrapper_pushbutton_func, &r);
+
+    // FIXME: Cannot pass a keycode with modifier flags as uchar
+    keywidget_init(QUIT_BUTTON, /*KB_FLAG_ALT |*/ 'x', wrapper_pushbutton_func);
+
+    opanel_redraw(TRUE);
+}
+
+void mouse_screen_init(void) {
+    LGRect r;
+    char *keys;
+    int i ;
+    uchar sliderbase;
+    extern uchar inp6d_headset;
+    
+    keys = get_temp_string(REF_STR_KeyEquivs1);
+    clear_obuttons();
+	i = 0;
+    
+    standard_button_rect(&r, i, 2, 2, 1);
+    multi_init(i, keys[0], REF_STR_OptionsText + 0, REF_STR_OffonText, REF_STR_PopupCursFeedback, sizeof(popup_cursors),
+               &popup_cursors, 2, NULL, &r);
+    i++;
+
+    standard_button_rect(&r, i, 2, 2, 1);
+    multi_init(i, keys[1], REF_STR_OptionsText + 1, REF_STR_MouseHand, REF_STR_HandFeedback,
+               sizeof(player_struct.questvars[MOUSEHAND_QVAR]), &player_struct.questvars[MOUSEHAND_QVAR], 2,
+               mousehand_dealfunc, &r);
+    i++;
+
+    standard_slider_rect(&r, i, 2, 1);
+    sliderbase = ((r.lr.x - r.ul.x - 3) * (FIX_UNIT / 3)) / USHRT_MAX;
+    slider_init(i, REF_STR_DoubleClick, sizeof(ushort), FALSE, &player_struct.questvars[DCLICK_QVAR], USHRT_MAX,
+                sliderbase, dclick_dealfunc, &r);
+    i++;
+
+    standard_button_rect(&r, i, 2, 2, 1);
+    pushbutton_init(i, keys[2], REF_STR_Joystick, joystick_button_func, &r);
+    i++;
+    
+    // return (fixed at position 5)
+    standard_button_rect(&r, 5, 2, 2, 1);
+    pushbutton_init(RETURN_BUTTON, 'r', REF_STR_OptionsText + 5, wrapper_pushbutton_func, &r);
+
+    // FIXME: Cannot pass a keycode with modifier flags as uchar
+    keywidget_init(QUIT_BUTTON, /*KB_FLAG_ALT |*/ 'x', wrapper_pushbutton_func);
+
+    opanel_redraw(TRUE);
+}
+
+void videorender_screen_init(void) {
+	LGRect r;
     int i;
     char *keys;
 #ifdef SVGA_SUPPORT
@@ -1937,15 +2013,9 @@ void video_screen_init(void) {
     clear_obuttons();
     i = 0;
 
-	global_fov = gShockPrefs.doFov;
-	
 #ifdef USE_OPENGL
     // renderer
     if(can_use_opengl()) {
-
-		if (gShockPrefs.doUseOpenGL)
-			global_fov = 80;
-
         standard_button_rect(&r, i, 2, 2, 2);
         multi_init(i, 'g', REF_STR_Renderer, REF_STR_Software, ID_NULL,
                    sizeof(gShockPrefs.doUseOpenGL), &gShockPrefs.doUseOpenGL, 2, renderer_dealfunc, &r);
@@ -2003,71 +2073,31 @@ void video_screen_init(void) {
     opanel_redraw(TRUE);
 }
 
-void video_screen_master_init(void) {
+void videoprefs_screen_init(void) {
 	LGRect r;
-	int i = 0;
-
+	int i;
+	
 	clear_obuttons();
-
-	// actual original video options
-	standard_button_rect(&r, i, 2, 2, 2);
-	pushbutton_init(RENDERING_BUTTON, 'e', REF_STR_Rendering, wrapper_pushbutton_func, &r);
-
+	i = 0;
+	
+	standard_button_rect(&r, i, 2, 2, 1);
+	pushbutton_init(i, 'f', REF_STR_Fullscrn, fullscreen_pushbutton_func, &r);
 	i++;
-
-	// new render preferences button (fov slider etc)
-	standard_button_rect(&r, i, 2, 2, 2);
-	pushbutton_init(RENDER_PREFS_BUTTON, 'p', REF_STR_RenderPrefs, wrapper_pushbutton_func, &r);
-
+	
+    standard_slider_rect(&r, 3, 2, 1);
+    r.lr.x += (r.lr.x - r.ul.x);
+	hack_fov = gShockPrefs.doFieldOfView - MIN_FOV;
+    slider_init(i, REF_STR_FOVValue, sizeof(hack_fov), FALSE, &hack_fov,
+                MAX_FOV - MIN_FOV, (80 - MIN_FOV) * (r.lr.x - r.ul.x) / (MAX_FOV - MIN_FOV), fov_dealfunc, &r);
 	i++;
+	
+	standard_button_rect(&r, 5, 2, 2, 1);
+    pushbutton_init(RETURN_BUTTON, 'r', REF_STR_OptionsText + 5, wrapper_pushbutton_func, &r);
 
-	// return (fixed at position 5)
-	standard_button_rect(&r, 5, 2, 2, 2);
-	pushbutton_init(RETURN_BUTTON, 'r', REF_STR_OptionsText + 5, wrapper_pushbutton_func, &r);
+    // FIXME: Cannot pass a keycode with modifier flags as uchar
+    keywidget_init(QUIT_BUTTON, /*KB_FLAG_ALT |*/ 'x', wrapper_pushbutton_func);
 
-	opanel_redraw(TRUE);
-}
-
-void renderprefs_screen_init(void)
-{
-	LGRect r;
-	int i = 0;
-
-	clear_obuttons();
-
-	fovsliderval = 100 * (short)(((float)global_fov - min_fov) / (max_fov - min_fov));
-	standard_slider_rect(&r, i, 2, 5);
-	r.lr.x += (r.lr.x - r.ul.x);
-	r.ul.y -= 10;
-	r.lr.y -= 10;
-	slider_init(i, REF_STR_FOV, sizeof(fovsliderval), FALSE, &fovsliderval, 100,
-		0, fov_slider_dealfunc, &r);
-
-	i++;
-
-	standard_button_rect(&r, i, 1, 2, 10);
-	int textoffset = (r.lr.x - r.ul.x) * 1;
-	r.lr.x += textoffset;
-	r.ul.x += textoffset;
-	r.lr.y -= 5;
-	r.ul.y -= 5;
-	textwidget_init(i, BUTTON_COLOR, REF_STR_FOV_Value, &r);
-	fovtextactive = true;
-	fovtextid = i;
-
-	i++;
-	i++;
-
-	standard_button_rect(&r, i, 2, 2, 2);
-	multi_init(i, 'f', REF_STR_Fullscreen, REF_STR_OffonText, ID_NULL,
-		sizeof(gShockPrefs.doFullscreen), &(gShockPrefs.doFullscreen), 2, fullscreen_dealfunc, &r);
-
-	i++;
-
-	standard_button_rect(&r, 5, 2, 2, 2);
-	pushbutton_init(RETURN_BUTTON, 'r', REF_STR_OptionsText + 5, wrapper_pushbutton_func, &r);
-
-	opanel_redraw(TRUE);
+    opanel_redraw(TRUE);
 }
 
 #if defined(VFX1_SUPPORT) || defined(CTM_SUPPORT)
@@ -2171,10 +2201,11 @@ void screenmode_screen_init(void) {
 void options_screen_init(void) {
     LGRect r;
     char *keys;
-    int i = 0;
+    int i;
 
     keys = get_temp_string(REF_STR_KeyEquivs2);
     clear_obuttons();
+	i = 0;
 
     // olh_temp=(QUESTBIT_GET(OLH_QBIT)==0);
 
@@ -2188,10 +2219,6 @@ void options_screen_init(void) {
     multi_init(i, keys[i], REF_STR_OptionsText + 2, REF_STR_TerseText, REF_STR_TerseFeedback,
                sizeof(gShockPrefs.goMsgLength), &(gShockPrefs.goMsgLength), 2, NULL, &r);
     i++;
-
-	standard_button_rect(&r, 3, 2, 2, 2);
-	multi_init(i, keys[i], REF_STR_Persist_MLook, REF_STR_OffonText, ID_NULL,
-		sizeof(gShockPrefs.goPersistMLook), &(gShockPrefs.goPersistMLook), 2, NULL, &r);
 
     i++;
 

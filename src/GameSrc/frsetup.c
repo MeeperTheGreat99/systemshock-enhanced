@@ -135,8 +135,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "FrUtils.h"
 #include "fullscrn.h"
 #include "star.h"
-#include "wrapper.h"
-#include "fovchange.h"
 
 #ifdef STEREO_SUPPORT
 #include <inp6d.h>
@@ -144,6 +142,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #endif
 
 #include "OpenGL.h"
+#include "Prefs.h"
 
 // Internal Prototypes
 void fr_tfunc_grab_start(void);
@@ -158,8 +157,6 @@ uchar (*fr_obj_block)(void *vmptr, uchar *_sclip, int *loc);
 void (*fr_clip_start)(uchar headnorth);
 void (*fr_rend_start)(void);
 grs_bitmap *(*fr_get_tmap)(void);
-int currentwidth = 0;
-int currentheight = 0;
 
 // Set by machine type
 bool DoubleSize = false;
@@ -426,8 +423,6 @@ int fr_set_global_callbacks(int (*draw)(void *dstc, void *dstbm, int x, int y, i
 //---------------------------------------------------------------------------------
 frc *fr_place_view(frc *view, void *v_cam, void *cnvs, int pflags, char axis, int fov, int xc, int yc, int wid,
                    int hgt) {
-	currentwidth = wid;
-	currentheight = hgt;
     cams *cam = (cams *)v_cam;
     fauxrend_context *fr;
 
@@ -484,8 +479,15 @@ frc *fr_place_view(frc *view, void *v_cam, void *cnvs, int pflags, char axis, in
     fr->ywid = hgt;
     fr->flags = pflags;
     fr->camptr = cam;
-    if (fov == 0)
-		fov = global_fov;
+    if (fov == 0) {
+		// Meeper - field of view slider
+		
+		// rendering camera screens at different fov crashes the game - oopsie
+		if (_fr_curflags & FR_HACKCAM_MASK)
+			fov = FR_DEF_FOV;
+		else
+			fov = gShockPrefs.doFieldOfView;
+	}
     if (axis == 0)
         axis = FR_DEF_AXIS;
     fr->viewer_zoom = g3_get_zoom(axis, build_fix_angle(fov), wid, hgt);
@@ -589,7 +591,9 @@ void _fr_change_detail(int det) {
         gr_set_per_detail_level(GR_HIGH_PER_DETAIL);
     }
     if (_fr->fov == 0)
-		fov = global_fov;
+		// Meeper - field of view slider
+        //fov = FR_DEF_FOV;
+		fov = gShockPrefs.doFieldOfView;
     else
         fov = _fr->fov;
     tmpz = g3_get_zoom(FR_DEF_AXIS, fov, _fr->draw_canvas.bm.w, _fr->draw_canvas.bm.h);

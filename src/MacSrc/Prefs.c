@@ -18,9 +18,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 //====================================================================================
 //
-//		System Shock - ©1994-1995 Looking Glass Technologies, Inc.
+//      System Shock - ©1994-1995 Looking Glass Technologies, Inc.
 //
-//		Prefs.c	-	Handles saving and loading preferences.
+//      Prefs.c -   Handles saving and loading preferences.
 //                  Also loads and sets default keybinds.
 //
 //====================================================================================
@@ -37,13 +37,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "input.h"
 #include "mainloop.h"
 #include "movekeys.h"
-
-#include "fr3d.h"
-#include "fovchange.h"
-#include "fullscrntogg.h"
-
-short max_fov = 135;
-short min_fov = 70;
+#include "mfdext.h"
 
 extern uchar mfd_button_callback_kb(ushort keycode, uint32_t context, intptr_t data);
 extern uchar hw_hotkey_callback(ushort keycode, uint32_t context, intptr_t data);
@@ -51,8 +45,8 @@ extern uchar hw_hotkey_callback(ushort keycode, uint32_t context, intptr_t data)
 //--------------------
 //  Filenames
 //--------------------
-static const char *PREFS_FILENAME = "prefs.txt";
-static const char *KEYBINDS_FILENAME = "keybinds.txt";
+static const char *PREFS_FILENAME = "prefs.cfg";
+static const char *KEYBINDS_FILENAME = "keybinds.cfg";
 
 //--------------------
 //  Globals
@@ -82,7 +76,8 @@ static const char *PREF_MUSIC_VOL = "music-volume";
 static const char *PREF_SFX_VOL = "sfx-volume";
 static const char *PREF_ALOG_VOL = "alog-volume";
 static const char *PREF_VIDEOMODE = "video-mode";
-static const char *PREF_HALFRES = "half-resolution";
+// Meeper - option appears to be broken
+//static const char *PREF_HALFRES = "half-resolution";
 static const char *PREF_DETAIL = "detail";
 static const char *PREF_USE_OPENGL = "use-opengl";
 static const char *PREF_TEX_FILTER = "texture-filter";
@@ -92,14 +87,17 @@ static const char *PREF_MSG_LENGTH = "message-length";
 static const char *PREF_ALOG_SETTING = "alog-setting";
 static const char *PREF_MIDI_BACKEND = "midi-backend";
 static const char *PREF_MIDI_OUTPUT = "midi-output";
-static const char *PREF_PERSIST_MLOOK = "persist-mouselook";
-static const char *PREF_FOV = "fov";
 static const char *PREF_FULLSCREEN = "fullscreen";
+static const char *PREF_BORDERLESS = "borderless";
+static const char *PREF_MAXIMIZED = "maximized";
+static const char *PREF_PERSIST_MOUSELOOK = "persist-mouselook";
+static const char *PREF_INPUT_SCHEME = "input-scheme";
+static const char *PREF_FIELD_OF_VIEW = "field-of-view";
 
 static void SetShockGlobals(void);
 
 //--------------------------------------------------------------------
-//	  Initialize the preferences to their default settings.
+//    Initialize the preferences to their default settings.
 //--------------------------------------------------------------------
 void SetDefaultPrefs(void) {
 
@@ -125,37 +123,27 @@ void SetDefaultPrefs(void) {
     gShockPrefs.soSfxVolume = 100;
     gShockPrefs.soAudioLogVolume = 100;
     gShockPrefs.doVideoMode = 3;
-    gShockPrefs.doResolution = 0; // High-res.
+    //gShockPrefs.doResolution = 0; // High-res.
     gShockPrefs.doDetail = 3;     // Max detail.
     gShockPrefs.doUseOpenGL = false;
     gShockPrefs.doTextureFilter = 0; // unfiltered
-	gShockPrefs.doFullscreen = false; // Windowed mode
     gShockPrefs.goOnScreenHelp = true;
     gShockPrefs.doGamma = 29;    // Default gamma (29 out of 100).
     gShockPrefs.goMsgLength = 0; // Normal
+    gShockPrefs.doFullscreen = false;
+    gShockPrefs.doBorderless = false;
+    gShockPrefs.doMaximized = false;
+	gShockPrefs.goPersistMouselook = false;
+	gShockPrefs.goInputScheme = 0;
+	gShockPrefs.doFieldOfView = 80;
     audiolog_setting = 1;
-
-	gShockPrefs.goPersistMLook = false;
-	gShockPrefs.doFov = 80;
-	global_fov = gShockPrefs.doFov;
-	saved_fov = gShockPrefs.doFov;
 
     SetShockGlobals();
 }
 
 static char *GetPrefsPathFilename(void) {
     static char filename[512];
-
-    FILE *f = fopen(PREFS_FILENAME, "r");
-    if (f != NULL) {
-        fclose(f);
-        strcpy(filename, PREFS_FILENAME);
-    } else {
-        char *p = SDL_GetBasePath();
-        snprintf(filename, sizeof(filename), "%s%s", p, PREFS_FILENAME);
-        SDL_free(p);
-    }
-
+    strcpy(filename, PREFS_FILENAME);
     return filename;
 }
 
@@ -173,7 +161,7 @@ static bool is_true(const char *s) {
 }
 
 //--------------------------------------------------------------------
-//	  Locate the preferences file and load them to set our global pref settings.
+//    Locate the preferences file and load them to set our global pref settings.
 //--------------------------------------------------------------------
 int16_t LoadPrefs(void) {
     FILE *f = fopen(GetPrefsPathFilename(), "r");
@@ -220,9 +208,9 @@ int16_t LoadPrefs(void) {
             int mode = atoi(value);
             if (mode >= 0 && mode <= 4)
                 gShockPrefs.doVideoMode = mode;
-        } else if (strcasecmp(key, PREF_HALFRES) == 0) {
+        } /*else if (strcasecmp(key, PREF_HALFRES) == 0) {
             gShockPrefs.doResolution = is_true(value);
-        } else if (strcasecmp(key, PREF_DETAIL) == 0) {
+        }*/ else if (strcasecmp(key, PREF_DETAIL) == 0) {
             int detail = atoi(value);
             if (detail >= 0 && detail <= 3)
                 gShockPrefs.doDetail = detail;
@@ -257,20 +245,22 @@ int16_t LoadPrefs(void) {
             int mo = atoi(value);
             if (mo >= 0)
                 gShockPrefs.soMidiOutput = (short)mo;
-		}
-		else if (strcasecmp(key, PREF_PERSIST_MLOOK) == 0) {
-			gShockPrefs.goPersistMLook = is_true(value);
-		} else if (strcasecmp(key, PREF_FOV) == 0) {
+        } else if (strcasecmp(key, PREF_FULLSCREEN) == 0) {
+            gShockPrefs.doFullscreen = is_true(value);
+        } else if (strcasecmp(key, PREF_BORDERLESS) == 0) {
+            gShockPrefs.doBorderless = is_true(value);
+        } else if (strcasecmp(key, PREF_MAXIMIZED) == 0) {
+            gShockPrefs.doMaximized = is_true(value);
+        } else if (strcasecmp(key, PREF_PERSIST_MOUSELOOK) == 0) {
+			gShockPrefs.goPersistMouselook = is_true(value);
+		} else if (strcasecmp(key, PREF_INPUT_SCHEME) == 0) {
+			int is = atoi(value);
+			if (is >= 0 && is <= 1)
+				gShockPrefs.goInputScheme = (short)is;
+		} else if (strcasecmp(key, PREF_FIELD_OF_VIEW) == 0) {
 			int fov = atoi(value);
-			if (fov < min_fov)
-				fov = min_fov;
-			if (fov > max_fov)
-				fov = max_fov;
-			gShockPrefs.doFov = (short)fov;
-			saved_fov = gShockPrefs.doFov;
-			global_fov = gShockPrefs.doUseOpenGL ? 80 : gShockPrefs.doFov;
-		} else if (strcasecmp(key, PREF_FULLSCREEN) == 0) {
-			gShockPrefs.doFullscreen = is_true(value);
+			if (fov >= MIN_FOV && fov <= MAX_FOV)
+				gShockPrefs.doFieldOfView = (short)fov;
 		}
     }
 
@@ -280,7 +270,7 @@ int16_t LoadPrefs(void) {
 }
 
 //--------------------------------------------------------------------
-//	  Save global settings in the preferences file.
+//    Save global settings in the preferences file.
 //--------------------------------------------------------------------
 int16_t SavePrefs(void) {
     INFO("Saving preferences");
@@ -298,7 +288,7 @@ int16_t SavePrefs(void) {
     fprintf(f, "%s = %d\n", PREF_SFX_VOL, sfx_on ? curr_sfx_vol : 0);
     fprintf(f, "%s = %d\n", PREF_ALOG_VOL, curr_alog_vol);
     fprintf(f, "%s = %d\n", PREF_VIDEOMODE, mode_id);
-    fprintf(f, "%s = %s\n", PREF_HALFRES, DoubleSize ? "yes" : "no");
+	//fprintf(f, "%s = %s\n", PREF_HALFRES, DoubleSize ? "yes" : "no");
     fprintf(f, "%s = %d\n", PREF_DETAIL, _fr_global_detail);
     fprintf(f, "%s = %s\n", PREF_USE_OPENGL, gShockPrefs.doUseOpenGL ? "yes" : "no");
     fprintf(f, "%s = %d\n", PREF_TEX_FILTER, gShockPrefs.doTextureFilter);
@@ -308,9 +298,12 @@ int16_t SavePrefs(void) {
     fprintf(f, "%s = %d\n", PREF_ALOG_SETTING, audiolog_setting);
     fprintf(f, "%s = %d\n", PREF_MIDI_BACKEND, gShockPrefs.soMidiBackend);
     fprintf(f, "%s = %d\n", PREF_MIDI_OUTPUT, gShockPrefs.soMidiOutput);
-	fprintf(f, "%s = %s\n", PREF_PERSIST_MLOOK, gShockPrefs.goPersistMLook ? "yes" : "no");
-	fprintf(f, "%s = %d\n", PREF_FOV, gShockPrefs.doFov);
-	fprintf(f, "%s = %s\n", PREF_FULLSCREEN, gShockPrefs.doFullscreen ? "yes" : "no");
+    fprintf(f, "%s = %s\n", PREF_FULLSCREEN, gShockPrefs.doFullscreen ? "yes" : "no");
+    fprintf(f, "%s = %s\n", PREF_BORDERLESS, gShockPrefs.doBorderless ? "yes" : "no");
+    fprintf(f, "%s = %s\n", PREF_MAXIMIZED, gShockPrefs.doMaximized ? "yes" : "no");
+	fprintf(f, "%s = %s\n", PREF_PERSIST_MOUSELOOK, gShockPrefs.goPersistMouselook ? "yes" : "no");
+	fprintf(f, "%s = %d\n", PREF_INPUT_SCHEME, gShockPrefs.goInputScheme);
+	fprintf(f, "%s = %d\n", PREF_FIELD_OF_VIEW, gShockPrefs.doFieldOfView);
     fclose(f);
     return 0;
 }
@@ -329,7 +322,7 @@ static void SetShockGlobals(void) {
     curr_alog_vol = gShockPrefs.soAudioLogVolume;
 
     mode_id = gShockPrefs.doVideoMode;
-    DoubleSize = (gShockPrefs.doResolution == 1); // Set this True for low-res.
+    DoubleSize = FALSE; // (gShockPrefs.doResolution == 1); // Set this True for low-res.
     SkipLines = gShockPrefs.doUseQD;
     _fr_global_detail = gShockPrefs.doDetail;
 }
@@ -535,8 +528,8 @@ extern uchar toggle_giveall_func(ushort keycode, uint32_t context, intptr_t data
 extern uchar toggle_physics_func(ushort keycode, uint32_t context, intptr_t data);
 extern uchar toggle_up_level_func(ushort keycode, uint32_t context, intptr_t data);
 extern uchar toggle_down_level_func(ushort keycode, uint32_t context, intptr_t data);
-// quick-use hotkey
-extern uchar quick_use(ushort keycode, uint32_t context, intptr_t data);
+extern uchar toggle_givedrugs_func(ushort keycode, uint32_t context, intptr_t data);
+extern uchar toggle_givegrenades_func(ushort keycode, uint32_t context, intptr_t data);
 
 #define TAB_KEY (KEY_TAB | KB_FLAG_DOWN)
 #define S_TAB_KEY (KEY_TAB | KB_FLAG_DOWN | KB_FLAG_SHIFT)
@@ -571,10 +564,8 @@ HOTKEYLOOKUP HotKeyLookup[] = {
     {"\"save_game\"", DEMO_CONTEXT, saveload_hotkey_func, FALSE, 0, CTRL('s'), 0},
     {"\"load_game\"", DEMO_CONTEXT, saveload_hotkey_func, TRUE, 0, CTRL('l'), 0},
     {"\"pause\"", DEMO_CONTEXT, pause_game_func, TRUE, 0, DOWN('p'), 0},
-    {"\"reload_weapon 1\"", DEMO_CONTEXT, reload_weapon_hotkey, 1, 0, CTRL(KEY_BS), 0},
-    {"\"reload_weapon 0\"", DEMO_CONTEXT, reload_weapon_hotkey, 0, 0, ALT(KEY_BS), 0},
-	{"\"reload_weapon 1\"", DEMO_CONTEXT, reload_weapon_hotkey, 1, 0, DOWN('v'), 0 },
-	{"\"reload_weapon 0\"", DEMO_CONTEXT, reload_weapon_hotkey, 0, 0, DOWN('r'), 0 },
+    {"\"reload_weapon 1\"", DEMO_CONTEXT, reload_weapon_hotkey, 1, 0, DOWN('v'), 0},
+    {"\"reload_weapon 0\"", DEMO_CONTEXT, reload_weapon_hotkey, 0, 0, DOWN('r'), 0},
     {"\"select_grenade\"", DEMO_CONTEXT, select_grenade_hotkey, 0, 0, CTRL('\''), 0},
     {"\"toggle_olh\"", DEMO_CONTEXT, toggle_olh_func, 0, 0, CTRL('h'), 0},
     {"\"select_drug\"", DEMO_CONTEXT, select_drug_hotkey, 0, 0, CTRL(';'), 0},
@@ -598,16 +589,29 @@ HOTKEYLOOKUP HotKeyLookup[] = {
     {"\"data reader\"", DEMO_CONTEXT, hw_hotkey_callback, 8, 0, 56, 0},
     {"\"booster\"", DEMO_CONTEXT, hw_hotkey_callback, 12, 0, 57, 0},
     {"\"jumpjets\"", DEMO_CONTEXT, hw_hotkey_callback, 13, 0, 48, 0},
-    {"\"mfd left 1\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F1, 0},
-    {"\"mfd left 2\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F2, 0},
-    {"\"mfd left 3\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F3, 0},
-    {"\"mfd left 4\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F4, 0},
-    {"\"mfd left 5\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F5, 0},
-    {"\"mfd right 1\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F6, 0},
-    {"\"mfd right 2\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F7, 0},
-    {"\"mfd right 3\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F8, 0},
-    {"\"mfd right 4\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F9, 0},
-    {"\"mfd right 5\"", DEMO_CONTEXT, mfd_button_callback_kb, 0, 0, KEY_F10, 0},
+    {"\"mfd left 1\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_LEFT, MFD_WEAPON_SLOT), 0, KEY_F1, 0},
+    {"\"mfd left 2\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_LEFT, MFD_ITEM_SLOT), 0, KEY_F2, 0},
+    {"\"mfd left 3\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_LEFT, MFD_MAP_SLOT), 0, KEY_F3, 0},
+    {"\"mfd left 4\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_LEFT, MFD_TARGET_SLOT), 0, KEY_F4, 0},
+    {"\"mfd left 5\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_LEFT, MFD_INFO_SLOT), 0, KEY_F5, 0},
+    {"\"mfd right 1\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_RIGHT, MFD_WEAPON_SLOT), 0, KEY_F6, 0},
+    {"\"mfd right 2\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_RIGHT, MFD_ITEM_SLOT), 0, KEY_F7, 0},
+    {"\"mfd right 3\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_RIGHT, MFD_MAP_SLOT), 0, KEY_F8, 0},
+    {"\"mfd right 4\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_RIGHT, MFD_TARGET_SLOT), 0, KEY_F9, 0},
+    {"\"mfd right 5\"", DEMO_CONTEXT, mfd_button_callback_kb, ENCODE_MFD_SELECTION(MFD_RIGHT, MFD_INFO_SLOT), 0, KEY_F10, 0},
+    // Meeper - real keypad input
+	/*
+	{"\"keypad 0\"", DEMO_CONTEXT, keypad_hotkey_func, 0, 0, DOWN('0'), 0},
+    {"\"keypad 1\"", DEMO_CONTEXT, keypad_hotkey_func, 0, 0, DOWN('1'), 0},
+    {"\"keypad 2\"", DEMO_CONTEXT, keypad_hotkey_func, 0, 0, DOWN('2'), 0},
+    {"\"keypad 3\"", DEMO_CONTEXT, keypad_hotkey_func, 0, 0, DOWN('3'), 0},
+    {"\"keypad 4\"", DEMO_CONTEXT, keypad_hotkey_func, 0, 0, DOWN('4'), 0},
+    {"\"keypad 5\"", DEMO_CONTEXT, keypad_hotkey_func, 0, 0, DOWN('5'), 0},
+    {"\"keypad 6\"", DEMO_CONTEXT, keypad_hotkey_func, 0, 0, DOWN('6'), 0},
+    {"\"keypad 7\"", DEMO_CONTEXT, keypad_hotkey_func, 0, 0, DOWN('7'), 0},
+    {"\"keypad 8\"", DEMO_CONTEXT, keypad_hotkey_func, 0, 0, DOWN('8'), 0},
+    {"\"keypad 9\"", DEMO_CONTEXT, keypad_hotkey_func, 0, 0, DOWN('9'), 0},
+	*/
     //  { "\"mac_help\"",         DEMO_CONTEXT, MacHelpFunc,            0                        , 0, CTRL('/'),     0
     //  },
     {"\"toggle_options\"", DEMO_CONTEXT, wrapper_options_func, TRUE, 0, DOWN(KEY_ESC), 0},
@@ -615,11 +619,8 @@ HOTKEYLOOKUP HotKeyLookup[] = {
     {"\"cheat_physics\"", DEMO_CONTEXT, toggle_physics_func, TRUE, 0, CTRL('3'), 0},
     {"\"cheat_up_level\"", DEMO_CONTEXT, toggle_up_level_func, TRUE, 0, CTRL('4'), 0},
     {"\"cheat_down_level\"", DEMO_CONTEXT, toggle_down_level_func, TRUE, 0, CTRL('5'), 0},
-
-	{ "\"quick_use\"", DEMO_CONTEXT, quick_use, 0, 0, DOWN('c'), 0 },
-	{ "\"quick_use\"", DEMO_CONTEXT, quick_use, 0, 0, CTRL('c'), 0 },
-	{ "\"quick_use\"", DEMO_CONTEXT, quick_use, 0, 0, SHIFT('c'), 0 },
-	{ "\"quick_use\"", DEMO_CONTEXT, quick_use, 0, 0, ALT('c'), 0 },
+	{"\"cheat_give_drugs\"", DEMO_CONTEXT, toggle_givedrugs_func, TRUE, 0, CTRL('6'), 0},
+	// {"\"cheat_give_grenades\"", DEMO_CONTEXT, toggle_givegrenades_func, TRUE, 0, CTRL('7'), 0}, // Meeper - unstable for some reason
 
     {NULL, 0, 0, 0}};
 
@@ -630,17 +631,7 @@ int FireKeys[MAX_FIRE_KEYS + 1]; // see input.c
 
 static char *GetKeybindsPathFilename(void) {
     static char filename[512];
-
-    FILE *f = fopen(KEYBINDS_FILENAME, "r");
-    if (f != NULL) {
-        fclose(f);
-        strcpy(filename, KEYBINDS_FILENAME);
-    } else {
-		char *p = SDL_GetBasePath();
-        snprintf(filename, sizeof(filename), "%s%s", p, KEYBINDS_FILENAME);
-        SDL_free(p);
-    }
-
+    strcpy(filename, KEYBINDS_FILENAME);
     return filename;
 }
 
@@ -789,9 +780,13 @@ static MOVE_KEYBIND MoveKeybindsDefault[] =
   { CODE_UP       | KB_FLAG_ALT  , M_RUNFORWARD    },
   { CODE_W                       , M_FORWARD       },
   { CODE_UP                      , M_FORWARD       },
+  { CODE_Z        | KB_FLAG_SHIFT, M_FASTTURNLEFT  },
   { CODE_LEFT     | KB_FLAG_SHIFT, M_FASTTURNLEFT  },
+  { CODE_Z                       , M_TURNLEFT      },
   { CODE_LEFT                    , M_TURNLEFT      },
+  { CODE_C        | KB_FLAG_SHIFT, M_FASTTURNRIGHT },
   { CODE_RIGHT    | KB_FLAG_SHIFT, M_FASTTURNRIGHT },
+  { CODE_C                       , M_TURNRIGHT     },
   { CODE_RIGHT                   , M_TURNRIGHT     },
   { CODE_S                       , M_BACK          },
   { CODE_S        | KB_FLAG_SHIFT, M_BACK          },
@@ -799,10 +794,10 @@ static MOVE_KEYBIND MoveKeybindsDefault[] =
   { CODE_DOWN     | KB_FLAG_SHIFT, M_BACK          },
   { CODE_DOWN     | KB_FLAG_ALT  , M_BACK          },
   { CODE_A                       , M_SLIDELEFT     },
-  { CODE_A        | KB_FLAG_SHIFT, M_SLIDELEFT     },
+  { CODE_A        | KB_FLAG_SHIFT, M_FASTSLIDELEFT },
   { CODE_LEFT     | KB_FLAG_ALT  , M_SLIDELEFT     },
   { CODE_D                       , M_SLIDERIGHT    },
-  { CODE_D        | KB_FLAG_SHIFT, M_SLIDERIGHT    },
+  { CODE_D        | KB_FLAG_SHIFT, M_FASTSLIDERIGHT},
   { CODE_RIGHT    | KB_FLAG_ALT  , M_SLIDERIGHT    },
   { CODE_J                       , M_JUMP          },
   { CODE_J        | KB_FLAG_SHIFT, M_JUMP          },
@@ -820,12 +815,8 @@ static MOVE_KEYBIND MoveKeybindsDefault[] =
   { CODE_E                       , M_LEANRIGHT     },
   { CODE_E        | KB_FLAG_SHIFT, M_LEANRIGHT     },
   { CODE_RIGHT    | KB_FLAG_CTRL , M_LEANRIGHT     },
-  { CODE_UP       | KB_FLAG_CTRL , M_LOOKUP        },
-  { CODE_DOWN     | KB_FLAG_CTRL , M_LOOKDOWN      },
-  { CODE_S                       , M_THRUST        }, //cyber start
-  { CODE_S        | KB_FLAG_SHIFT, M_THRUST        },
-  { CODE_W                       , M_CLIMB         },
-  { CODE_W        | KB_FLAG_SHIFT, M_CLIMB         },
+  { CODE_W                       , M_THRUST        }, //cyber start
+  { CODE_W        | KB_FLAG_SHIFT, M_THRUST        },
   { CODE_UP                      , M_CLIMB         },
   { CODE_UP       | KB_FLAG_SHIFT, M_CLIMB         },
   { CODE_UP       | KB_FLAG_CTRL , M_CLIMB         },
@@ -834,8 +825,6 @@ static MOVE_KEYBIND MoveKeybindsDefault[] =
   { CODE_A        | KB_FLAG_SHIFT, M_BANKLEFT      },
   { CODE_D                       , M_BANKRIGHT     },
   { CODE_D        | KB_FLAG_SHIFT, M_BANKRIGHT     },
-  { CODE_X                       , M_DIVE          },
-  { CODE_X        | KB_FLAG_SHIFT, M_DIVE          },
   { CODE_DOWN                    , M_DIVE          },
   { CODE_DOWN     | KB_FLAG_SHIFT, M_DIVE          },
   { CODE_DOWN     | KB_FLAG_CTRL , M_DIVE          },

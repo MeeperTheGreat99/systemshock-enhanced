@@ -58,14 +58,3 @@ savgam*.dat
 # Eclipse CDT
 .project
 .cproject
-
-# other stuff
-*.aps
-prefs.txt
-keybinds.txt
-
-#OpenGL test stuff
-src/Libraries/glm
-
-#game shortcut
-SSHOCK.lnk

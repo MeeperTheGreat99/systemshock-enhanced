@@ -45,6 +45,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mouselook.h"
 #include "audiolog.h"
 #include "Xmi.h"
+#include "game_screen.h"
 
 //--------------
 //  PROTOTYPES
@@ -1091,6 +1092,26 @@ uchar toggle_down_level_func(ushort keycode, uint32_t context, intptr_t data) {
     return (TRUE);
 }
 
+uchar toggle_givedrugs_func(ushort keycode, uint32_t context, intptr_t data) {
+	for (int i = 0; i < NUM_DRUGZ; i++) {
+		player_struct.drugs[i] = 99;
+	}
+	screen_draw();
+	message_info("Here you go junkie!");
+	
+	return (TRUE);
+}
+
+uchar toggle_givegrenades_func(ushort keycode, uint32_t context, intptr_t data) {
+	for (int i = 0; i < NUM_GRENADEZ; i++) {
+		player_struct.grenades[i] = 99;
+	}
+	screen_draw();
+	message_info("Fuel for your explosive tendencies");
+	
+	return (TRUE);
+}
+
 #ifdef NOT_YET //
 
 #ifdef PLAYTEST
@@ -1311,11 +1332,13 @@ uchar pause_game_func(ushort keycode, uint32_t context, intptr_t data) {
 
     if (game_paused) {
         redraw_paused = TRUE;
-		snd_kill_all_samples();
+		//snd_kill_all_samples();
+		snd_pause();
         audiolog_stop();
         return FALSE;
     }
-
+		
+	snd_unpause();
     mouse_look_unpause();
 
     return TRUE;

@@ -70,6 +70,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "game_screen.h" // was screen.h?
 
+#include "Prefs.h"
+
 //#include <inp6d.h>
 //#include <i6dvideo.h>
 
@@ -2156,6 +2158,70 @@ uchar inventory_mouse_handler(uiEvent *ev, LGRegion *r, intptr_t data) {
 #endif
     if (game_paused)
         return (TRUE);
+	
+	// Meeper - alternate inventory mouse controls for System Shock 2 mode
+	short scheme = gShockPrefs.goInputScheme;
+	if (scheme == 1 && (
+	inventory_page == INV_MAIN_PAGE ||
+	inventory_page == INV_HARDWARE_PAGE || 
+	inventory_page == INV_GENERAL_PAGE || 
+	inventory_page == INV_SOFTWARE_PAGE)) {
+		bool leftClickNormal = ev->mouse_data.action & MOUSE_BTN2DOWN(0);
+		bool leftClickDouble = ev->mouse_data.action & UI_MOUSE_BTN2DOUBLE(0);
+		bool leftClickUp = ev->mouse_data.action & MOUSE_BTN2UP(0);
+		bool leftClick = leftClickNormal || leftClickDouble || leftClickUp;
+		
+		bool rightClickNormal = ev->mouse_data.action & MOUSE_BTN2DOWN(1);
+		bool rightClickDouble = ev->mouse_data.action & UI_MOUSE_BTN2DOUBLE(1);
+		bool rightClickUp = ev->mouse_data.action & MOUSE_BTN2UP(1);
+		bool rightClick = rightClickNormal || rightClickDouble || rightClickUp;
+		
+		bool midClickNormal = ev->mouse_data.action & MOUSE_BTN2DOWN(2);
+		bool midClickDouble = ev->mouse_data.action & UI_MOUSE_BTN2DOUBLE(2);
+		bool midClickUp = ev->mouse_data.action & MOUSE_BTN2UP(2);
+		bool midClick = midClickNormal || midClickDouble || midClickUp;
+		
+		if (leftClick) {
+			// interpret left click as right click (pickup item)
+			if (leftClickNormal) {
+				ev->mouse_data.action &= ~MOUSE_BTN2DOWN(0);
+				ev->mouse_data.action |= MOUSE_BTN2DOWN(1);
+			} else if (leftClickDouble) {
+				ev->mouse_data.action &= ~UI_MOUSE_BTN2DOUBLE(0);
+				ev->mouse_data.action |= UI_MOUSE_BTN2DOUBLE(1);
+			} else if (leftClickUp) {
+				ev->mouse_data.action &= ~MOUSE_BTN2UP(0);
+				ev->mouse_data.action |= MOUSE_BTN2UP(1);
+			}
+		} else if (rightClick) {
+			// interpret right click as double left click (use item)
+			if (rightClickNormal) {
+				ev->mouse_data.action &= ~MOUSE_BTN2DOWN(1);
+				ev->mouse_data.action |= UI_MOUSE_BTN2DOUBLE(0);
+			} else if (rightClickDouble) {
+				ev->mouse_data.action &= ~UI_MOUSE_BTN2DOUBLE(1);
+				ev->mouse_data.action |= UI_MOUSE_BTN2DOUBLE(0);
+			} else if (rightClickUp) {
+				// this check prevents grenades from blowing up in your face immediately after arming them in fullscreen mode
+				if (!full_game_3d) {
+					ev->mouse_data.action &= ~MOUSE_BTN2UP(1);
+					ev->mouse_data.action |= MOUSE_BTN2UP(0);
+				}
+			}
+		} else if (midClick) {
+			// interpret middle click as left click (select)
+			if (midClickNormal) {
+				ev->mouse_data.action &= ~MOUSE_BTN2DOWN(2);
+				ev->mouse_data.action |= MOUSE_BTN2DOWN(0);
+			} else if (midClickDouble) {
+				ev->mouse_data.action &= ~UI_MOUSE_BTN2DOUBLE(2);
+				ev->mouse_data.action |= UI_MOUSE_BTN2DOUBLE(0);
+			} else if (midClickUp) {
+				ev->mouse_data.action &= ~MOUSE_BTN2UP(2);
+				ev->mouse_data.action |= MOUSE_BTN2UP(0);
+			}
+		}
+	}
 
 #ifdef STEREO_SUPPORT
     if (convert_use_mode == 5) {
@@ -3417,6 +3483,12 @@ void absorb_object_on_cursor(ushort keycode, uint32_t context, intptr_t data) {
     if (object_on_cursor == 0)
         return;
 
-    if (inventory_add_object(object_on_cursor, TRUE))
-        pop_cursor_object();
+	if (!keycode && !context && !data) {
+		// Meeper - dont auto select items picked up in shifted mode
+		if (inventory_add_object(object_on_cursor, FALSE))
+			pop_cursor_object();
+	} else {
+		if (inventory_add_object(object_on_cursor, TRUE))
+			pop_cursor_object();
+	}
 }

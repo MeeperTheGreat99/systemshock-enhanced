@@ -107,6 +107,8 @@ int   snd_stop_digital(void);
 int   snd_set_digital_channels(int chan_cnt);
 int   snd_start_midi(void);
 int   snd_stop_midi(void);
+void  snd_pause(void);
+void  snd_unpause(void);
 
 int   snd_sample_play(int snd_ref, int len, uchar *smp, struct snd_digi_parms *dprm);
 int   snd_alog_play(int snd_ref, int len, Uint8 *smp, struct snd_digi_parms *dprm);

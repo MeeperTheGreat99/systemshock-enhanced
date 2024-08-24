@@ -195,7 +195,7 @@ void load_textures(void) {
     }
 
     for (c = 0; c < NUM_LOADED_TEXTURES; c++) {
-        i = loved_textures[c];
+        i = (ushort)loved_textures[c];
         if (!ResInUse(TEXTURE_64_ID + i)) {
             // Warning(("Hey, invalid texture in palette! slot %d = %d\n",c,i));
             i = 0;

@@ -38,7 +38,8 @@ typedef struct {
     short goLanguage; // 0 - English, 1 - French, 2 - German
     bool goCaptureMouse;
     bool goInvertMouseY;
-	bool goPersistMLook;
+	bool goPersistMouselook;
+	short goInputScheme;
 
     // Sound Options
     bool soBackMusic;
@@ -51,23 +52,27 @@ typedef struct {
 
     // Display Options
     short doVideoMode;
-    short doResolution; // 0 - High, 1 - Low
+    //short doResolution; // 0 - High, 1 - Low
     short doDetail;     // 0 - Min, 1-Low, 2-High, 3-Max
     short doGamma;
-	short doFov;
     bool doUseQD;
     bool doUseOpenGL;
-	bool doFullscreen;
     // 0 => unfiltered
     // 1 => bilinear
     // TODO: add trilinear, anisotropic?
     short doTextureFilter;
+	bool doFullscreen;
+	bool doBorderless;
+	bool doMaximized;
+	short doFieldOfView;
 } ShockPrefs;
 
 //--------------------
 //  Globals
 //--------------------
 extern ShockPrefs gShockPrefs;
+#define MIN_FOV 60
+#define MAX_FOV 120
 
 //--------------------
 //  Prototypes

@@ -105,7 +105,7 @@ void zoom_mfd(int mfd, bool shifted) {
 
     extern bool DoubleSize;
 
-    if (!shifted && !gShockPrefs.goPersistMLook)
+    if (!shifted && !gShockPrefs.goPersistMouselook)
         mouse_look_off();
 
     ucp = use_cursor_pos;

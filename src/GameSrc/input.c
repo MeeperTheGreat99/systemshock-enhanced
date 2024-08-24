@@ -1035,7 +1035,7 @@ uchar MacResFunc(ushort keycode, uint32_t context, intptr_t data) {
         message_info("High res.");
         SkipLines = FALSE;
     }
-    gShockPrefs.doResolution = (DoubleSize) ? 1 : 0; // KLC - Yeah, got to update this one too
+    //gShockPrefs.doResolution = (DoubleSize) ? 1 : 0; // KLC - Yeah, got to update this one too
     gShockPrefs.doUseQD = SkipLines;                 // KLC - and this one
     SavePrefs();                                     // KLC - and save the prefs out to disk.
 
@@ -1762,7 +1762,7 @@ void view3d_rightbutton_handler(uiEvent *ev, LGRegion *r, view3d_data *data) {
         if (left_down_jump)
             break;
         if (data->rdown) {
-            // printf("FIRE WEAPON!\n");
+            //printf("FIRE WEAPON!\n");
             if (fire_player_weapon(&aimpos, r, weapon_button_up) && (ev->mouse_data.action & MOUSE_RDOWN) && !fire_slam) {
                 if (full_game_3d)
                     uiPushSlabCursor(&fullscreen_slab, &fire_cursor);
@@ -1879,6 +1879,11 @@ void use_object_in_3d(ObjID obj, bool shifted) {
         break;
     }
     }
+	
+	// Meeper - objects are directly slurped up in System Shock 2 mode
+	short scheme = gShockPrefs.goInputScheme;
+	if (scheme == 1)
+		shifted = true;
 
     switch (mode) {
     case PICKUP_USE_MODE: {
@@ -1890,6 +1895,7 @@ void use_object_in_3d(ObjID obj, bool shifted) {
             showname = FALSE;
             break;
         }
+		
         // yank the object out of the map.
         del_loc_state.obj = obj;
         del_loc_state.loc = objs[obj].loc;
@@ -1909,9 +1915,9 @@ void use_object_in_3d(ObjID obj, bool shifted) {
             grenade_contact(obj, INT_MAX);
 
         if (shifted) {
-            absorb_object_on_cursor(0, 0, 0); //parameters unused
+            absorb_object_on_cursor(0, 0, 0); //parameters unused 
         }
-		else if (!gShockPrefs.goPersistMLook)
+        else if (!gShockPrefs.goPersistMouselook)
             mouse_look_off();
 
         success = TRUE;
@@ -2149,15 +2155,6 @@ void view3d_dclick(LGPoint pos, frc *fr, bool shifted) {
     }
 }
 
-// ach Gott...
-view3d_data* jankdata;
-
-uchar quick_use(ushort keycode, uint32_t context, intptr_t data)
-{
-	LGPoint jankpoint = MakePoint(grd_cap->w * 0.5, grd_cap->h * 0.5);
-	view3d_dclick(jankpoint, jankdata->fr, TRUE);
-}
-
 // -------------------------------------------------------------------------------
 // view3d_mouse_handler is the actual installed mouse handler, dispatching to the above functions
 uchar view3d_mouse_handler(uiEvent *ev, LGRegion *r, intptr_t v) {
@@ -2169,10 +2166,74 @@ uchar view3d_mouse_handler(uiEvent *ev, LGRegion *r, intptr_t v) {
     LGPoint evp = ev->pos;
     extern int _fr_glob_flags;
 
-	// update this atrocity
-	jankdata = data;
-
     pt = evp;
+	
+	// Meeper - alternate 3D mouse controls for System Shock 2 mode
+	// TODO: special function for this mouse button swapping mess
+	short scheme = gShockPrefs.goInputScheme;
+	if (scheme == 1) {
+		bool leftClickNormal = ev->mouse_data.action & MOUSE_BTN2DOWN(0);
+		bool leftClickDouble = ev->mouse_data.action & UI_MOUSE_BTN2DOUBLE(0);
+		bool leftClickUp = ev->mouse_data.action & MOUSE_BTN2UP(0);
+		bool leftClick = leftClickNormal || leftClickDouble || leftClickUp;
+		
+		bool rightClickNormal = ev->mouse_data.action & MOUSE_BTN2DOWN(1);
+		bool rightClickDouble = ev->mouse_data.action & UI_MOUSE_BTN2DOUBLE(1);
+		bool rightClickUp = ev->mouse_data.action & MOUSE_BTN2UP(1);
+		bool rightClick = rightClickNormal || rightClickDouble || rightClickUp;
+		
+		bool midClickNormal = ev->mouse_data.action & MOUSE_BTN2DOWN(2);
+		bool midClickDouble = ev->mouse_data.action & UI_MOUSE_BTN2DOUBLE(2);
+		bool midClickUp = ev->mouse_data.action & MOUSE_BTN2UP(2);
+		bool midClick = midClickNormal || midClickDouble || midClickUp;
+		
+		if (leftClick) {
+			// interpret left click as right click (attack)
+			if (leftClickNormal) {
+				ev->mouse_data.action &= ~MOUSE_BTN2DOWN(0);
+				ev->mouse_data.action |= MOUSE_BTN2DOWN(1);
+			} else if (leftClickDouble) {
+				ev->mouse_data.action &= ~UI_MOUSE_BTN2DOUBLE(0);
+				ev->mouse_data.action |= UI_MOUSE_BTN2DOUBLE(1);
+			} else if (leftClickUp) {
+				ev->mouse_data.action &= ~MOUSE_BTN2UP(0);
+				ev->mouse_data.action |= MOUSE_BTN2UP(1);
+			}
+		} else if (rightClick) {
+			// interpret right click as double left click (interact)
+			if (rightClickNormal) {
+				ev->mouse_data.action &= ~MOUSE_BTN2DOWN(1);
+				ev->mouse_data.action |= UI_MOUSE_BTN2DOUBLE(0);
+			} else if (rightClickDouble) {
+				ev->mouse_data.action &= ~UI_MOUSE_BTN2DOUBLE(1);
+				ev->mouse_data.action |= UI_MOUSE_BTN2DOUBLE(0);
+			} else if (rightClickUp) {
+				ev->mouse_data.action &= ~MOUSE_BTN2UP(1);
+				ev->mouse_data.action |= MOUSE_BTN2UP(0);
+			}
+		} else if (midClick) {
+			// interpret middle click as left click (select)
+			if (midClickNormal) {
+				ev->mouse_data.action &= ~MOUSE_BTN2DOWN(2);
+				ev->mouse_data.action |= MOUSE_BTN2DOWN(0);
+			} else if (midClickDouble) {
+				ev->mouse_data.action &= ~UI_MOUSE_BTN2DOUBLE(2);
+				ev->mouse_data.action |= UI_MOUSE_BTN2DOUBLE(0);
+			} else if (midClickUp) {
+				ev->mouse_data.action &= ~MOUSE_BTN2UP(2);
+				ev->mouse_data.action |= MOUSE_BTN2UP(0);
+			}
+		}
+		
+		// miscellaneous nonsense to fix a bug with automatic weapons not being automatic
+		if (md->buttons & (1 << MOUSE_LBUTTON)) {
+			ev->mouse_data.buttons &= ~(1 << MOUSE_LBUTTON);
+			ev->mouse_data.buttons |= (1 << MOUSE_RBUTTON);
+		} else if (md->buttons & (1 << MOUSE_RBUTTON)) {
+			ev->mouse_data.buttons &= ~(1 << MOUSE_RBUTTON);
+			ev->mouse_data.buttons |= (1 << MOUSE_LBUTTON);
+		}
+	}
 
 #ifdef STEREO_SUPPORT
     if (convert_use_mode == 5) {

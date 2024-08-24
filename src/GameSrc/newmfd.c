@@ -57,6 +57,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "gr2ss.h"
 
 #include "cybstrng.h"
+#include "Prefs.h"
 
 // -----------------------
 // Player_Struct Accessors
@@ -861,10 +862,32 @@ uchar mfd_view_callback(uiEvent *e, LGRegion *r, intptr_t udata) {
         return mfd_object_cursor_handler(e, r, which_mfd);
     else
         object_button_down = FALSE;
-    func_id = mfd_get_active_func(which_mfd);
+	func_id = mfd_get_active_func(which_mfd);
+	
+	// Meeper - alternate container mouse controls for System Shock 2 mode
+	short scheme = gShockPrefs.goInputScheme;
+	if (scheme == 1 && func_id == MFD_GUMP_FUNC) {
+		bool leftClickNormal = e->mouse_data.action & MOUSE_BTN2DOWN(0);
+		bool leftClickDouble = e->mouse_data.action & UI_MOUSE_BTN2DOUBLE(0);
+		bool leftClickUp = e->mouse_data.action & MOUSE_BTN2UP(0);
+		bool leftClick = leftClickNormal || leftClickDouble || leftClickUp;
+		
+		if (leftClick) {
+			// interpret all left clicks as double left clicks (pickup item)
+			if (leftClickNormal) {
+				e->mouse_data.action &= ~MOUSE_BTN2DOWN(0);
+				e->mouse_data.action |= UI_MOUSE_BTN2DOUBLE(0);
+			}
+		}
+	}
+	
     f = &(mfd_funcs[func_id]);
-    if (f->simp && f->simp(m, e))
+    if (f->simp && f->simp(m, e)) {
+		if (scheme == 1 && object_on_cursor) {
+			absorb_object_on_cursor(0, 0, 0);
+		}
         return TRUE;
+	}
     for (i = 0; i < f->handler_count; i++) {
         LGPoint pos = e->pos;
 #ifdef STEREO_SUPPORT
@@ -959,22 +982,12 @@ uchar mfd_button_callback(uiEvent *e, LGRegion *r, intptr_t udata) {
 
 uchar mfd_button_callback_kb(ushort keycode, uint32_t context, intptr_t data) {
     int which_panel, which_button;
-    int fkeynum;
 
     if (!global_fullmap->cyber) {
 
-        fkeynum = (int)keycode - 128;
+        DECODE_MFD_SELECTION(which_panel, which_button, data);
 
-        if (fkeynum >= MFD_NUM_VIRTUAL_SLOTS) {
-            which_panel = MFD_RIGHT;
-        }
-        else {
-            which_panel = MFD_LEFT;
-        }
-
-        which_button = ((int)fkeynum) % MFD_NUM_VIRTUAL_SLOTS;
-
-        mfd_select_button(which_panel, which_button);
+        mfd_select_button(which_panel, which_button % MFD_NUM_VIRTUAL_SLOTS);
     }
 
     return TRUE;

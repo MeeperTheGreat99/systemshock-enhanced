@@ -32,9 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "InitMac.h"
 #include "Modding.h"
-#ifdef USE_OPENGL
 #include "OpenGL.h"
-#endif
 #include "Prefs.h"
 #include "Shock.h"
 #include "ShockBitmap.h"
@@ -48,14 +46,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "status.h"
 #include "version.h"
 
-#include "fullscrntogg.h"
-
 //--------------------
 //  Globals
 //--------------------
 bool gPlayingGame;
-bool gFullscreenArg;
-bool gWindowedArg;
 
 grs_screen *cit_screen;
 SDL_Window *window;
@@ -113,17 +107,9 @@ int main(int argc, char **argv) {
     LoadHotkeyKeybinds();
     LoadMoveKeybinds();
 
-	if (gShockPrefs.doFullscreen)
-		enterFullscreen(false);
-
     // Process some startup arguments
 
     bool show_splash = !CheckArgument("-nosplash");
-
-	if (CheckArgument("-fullscreen"))
-		enterFullscreen(false);
-	if (CheckArgument("-windowed"))
-		exitFullscreen(false);
 
     // CC: Modding support! This is so exciting.
 
@@ -141,7 +127,7 @@ int main(int argc, char **argv) {
 
     // Draw the splash screen
 
-    //INFO("Showing splash screen");
+    INFO("Showing splash screen");
     splash_draw(show_splash);
 
     // Start in the Main Menu loop
@@ -150,10 +136,11 @@ int main(int argc, char **argv) {
     loopmode_enter(SETUP_LOOP);
 
     // Start the main loop
-	
+
     INFO("Showing main menu, starting game loop");
     mainloop(argc, argv);
 
+	SavePrefs();
     status_bio_end();
     stop_music();
 
@@ -206,15 +193,19 @@ void InitSDL() {
 
     // Open our window!
     char window_title[128];
-    //sprintf(window_title, "System Shock - %s", SHOCKOLATE_VERSION);
-	sprintf(window_title, "System Shock - Enhanced");
+    sprintf(window_title, "System Shock - Enhanced - %s", SHOCKOLATE_VERSION);
 
     window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, grd_cap->w, grd_cap->h,
                               SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
 
-	SDL_Surface* appicon = SDL_LoadBMP("shock.bmp");
-	if (appicon)
-		SDL_SetWindowIcon(window, appicon);
+	// Meeper - fullscreen arg wins over windowed arg
+	if (CheckArgument("-fullscreen") || (gShockPrefs.doFullscreen && !CheckArgument("-windowed"))) {
+		extern void enterFullscreen();
+		enterFullscreen();
+	} else if (gShockPrefs.doMaximized) {
+		SDL_RestoreWindow(window);
+		SDL_MaximizeWindow(window);
+	}
 
     // Create the palette
 
@@ -237,9 +228,8 @@ void InitSDL() {
     SDL_RenderSetLogicalSize(renderer, grd_cap->w, grd_cap->h);
 
     // Startup OpenGL
-#ifdef USE_OPENGL
+
     init_opengl();
-#endif
 
     SDLDraw();
 
@@ -252,7 +242,8 @@ void SetSDLPalette(int index, int count, uchar *pal) {
     static bool gammalut_init = 0;
     static uchar gammalut[100 - 10 + 1][256];
     if (!gammalut_init) {
-		double factor = 2.2;// (can_use_opengl() ? 1.0 : 2.2); // OpenGL uses 2.2
+        //double factor = (can_use_opengl() ? 1.0 : 2.2); // OpenGL uses 2.2
+		double factor = 2.2;
         int i, j;
         for (i = 10; i <= 100; i++) {
             double gamma = (double)i * 1.0 / 100;
@@ -283,52 +274,42 @@ void SetSDLPalette(int index, int count, uchar *pal) {
 
     if (!UseCutscenePalette) {
         // Hack black!
-		gamePalette[255].r = 0x0;
-		gamePalette[255].g = 0x0;
-		gamePalette[255].b = 0x0;
+        gamePalette[255].r = 0x0;
+        gamePalette[255].g = 0x0;
+        gamePalette[255].b = 0x0;
         gamePalette[255].a = 0xff;
     }
 
     SDL_SetPaletteColors(sdlPalette, gamePalette, 0, 256);
     SDL_SetSurfacePalette(drawSurface, sdlPalette);
     SDL_SetSurfacePalette(offscreenDrawSurface, sdlPalette);
-#ifdef USE_OPENGL
+
     if (should_opengl_swap())
         opengl_change_palette();
-#endif
 }
 
 void SDLDraw() {
-#ifdef USE_OPENGL
     if (should_opengl_swap()) {
         sdlPalette->colors[255].a = 0x00;
     }
-#endif
 
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, drawSurface);
 
-#ifdef USE_OPENGL
     if (should_opengl_swap()) {
         sdlPalette->colors[255].a = 0xff;
-		SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+        SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
     }
-#endif
 
     SDL_Rect srcRect = {0, 0, gScreenWide, gScreenHigh};
     SDL_RenderCopy(renderer, texture, &srcRect, NULL);
     SDL_DestroyTexture(texture);
 
-#ifdef USE_OPENGL
     if (should_opengl_swap()) {
         opengl_swap_and_restore();
     } else {
         SDL_RenderPresent(renderer);
         SDL_RenderClear(renderer);
     }
-#else
-	SDL_RenderPresent(renderer);
-	SDL_RenderClear(renderer);
-#endif
 }
 
 bool MouseCaptured = FALSE;
@@ -340,10 +321,13 @@ void CaptureMouse(bool capture) {
 
     if (!MouseCaptured && mlook_enabled && SDL_GetRelativeMouseMode() == SDL_TRUE) {
         SDL_SetRelativeMouseMode(SDL_FALSE);
-
-        int w, h;
-        SDL_GetWindowSize(window, &w, &h);
-        SDL_WarpMouseInWindow(window, w / 2, h / 2);
+		
+		extern uchar lazy_dont_recenter_mouse_hack;
+		if (!lazy_dont_recenter_mouse_hack) {
+			int w, h;
+			SDL_GetWindowSize(window, &w, &h);
+			SDL_WarpMouseInWindow(window, w / 2, h / 2);
+		}
     } else
         SDL_SetRelativeMouseMode(MouseCaptured ? SDL_TRUE : SDL_FALSE);
 }

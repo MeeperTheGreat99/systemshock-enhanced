@@ -4,15 +4,8 @@ project(shockolate VERSION 0.7.8)
 
 include(FeatureSummary)
 
-#set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS OFF)
-#set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB32_PATHS ON)
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB32_PATHS OFF)
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    enable_language("RC")
-    set (WIN32_RESOURCES ${CMAKE_SOURCE_DIR}/icon.rc)
-endif()
 
 # Required for stdbool.h
 set(CMAKE_C_STANDARD 99)
@@ -20,26 +13,25 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g ")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -D__STDC_LIMIT_MACROS")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -static")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -D__STDC_LIMIT_MACROS -static -static-libstdc++")
 
 option(ENABLE_EXAMPLES "Enable example applications" OFF)
 add_feature_info(ENABLE_EXAMPLES ENABLE_EXAMPLES "Enable example application (can be broken!)")
+
 option(ENABLE_DEBUG_BLIT "Enable debugging blitter" OFF)
 add_feature_info(ENABLE_DEBUG_BLIT ENABLE_DEBUG_BLIT "Enable debugging blitter")
+
 option(ENABLE_OPENGL "Enable OpenGL support" ON)
 add_feature_info(ENABLE_OPENGL ENABLE_OPENGL "Enable OpenGL support")
 
-set(ENABLE_SDL2 "BUNDLED" CACHE STRING "Enable SDL2 (ON/BUNDLED, default BUNDLED)")
-set_property(CACHE ENABLE_SDL2 PROPERTY STRINGS "ON" "BUNDLED")
+option(ENABLE_SDL2 "Enable SDL2 support" ON)
 add_feature_info(ENABLE_SDL2 ENABLE_SOUND "Enable SDL2 support")
 
-set(ENABLE_SOUND "BUNDLED" CACHE STRING "Enable sound support (requires SDL2_mixer) (ON/BUNDLED/OFF, default BUNDLED)")
-set_property(CACHE ENABLE_SOUND PROPERTY STRINGS "ON" "BUNDLED" "OFF")
-add_feature_info(ENABLE_SOUND ENABLE_SOUND "Enable sound support (requires SDL2_mixer)")
+option(ENABLE_SOUND "Enable SDL2_mixer sound support" ON)
+add_feature_info(ENABLE_SOUND ENABLE_SOUND "Enable SDL2_mixer sound support")
 
-set(ENABLE_FLUIDSYNTH "BUNDLED" CACHE STRING "Enable FluidSynth MIDI support (ON/BUNDLED/OFF, default BUNDLED)")
-set_property(CACHE ENABLE_FLUIDSYNTH PROPERTY STRINGS "ON" "BUNDLED" "OFF")
+option(ENABLE_FLUIDSYNTH "Enable FluidSynth MIDI support" ON)
 add_feature_info(ENABLE_FLUIDSYNTH ENABLE_FLUIDSYNTH "Enable FluidSynth MIDI support")
 
 # HAAAAX!!
@@ -52,54 +44,68 @@ endif()
 add_compile_options(-fsigned-char -fno-strict-aliasing)
 
 # Find OpenGL
-if(ENABLE_OPENGL)
+if(ENABLE_OPENGL MATCHES ON)
 	find_package(OpenGL REQUIRED)
 	add_definitions(-DUSE_OPENGL)
 	if(WIN32)
-		list(APPEND OPENGL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/build_ext/built_glew/include)
-		list(APPEND OPENGL_LIBRARIES ${CMAKE_SOURCE_DIR}/build_ext/built_glew/lib/libglew32.dll.a winmm)
-	endif(WIN32)
-endif(ENABLE_OPENGL)
+		list(APPEND OPENGL_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/external_libs/glew/include)
+		list(APPEND OPENGL_LIBRARIES ${CMAKE_SOURCE_DIR}/external_libs/glew_built/lib/libglew32.dll.a winmm)
+	endif()
+endif()
 
-if(ENABLE_SDL2 MATCHES "ON")
-	find_package(SDL2 REQUIRED)
+if(ENABLE_SDL2 MATCHES ON)
+	set(SDL2_DIR ${CMAKE_SOURCE_DIR}/external_libs/SDL_built)
+	find_library(SDL2_LIBRARY SDL2 PATHS ${SDL2_DIR} NO_DEFAULT_PATH)
+	find_library(SDL2MAIN_LIBRARY SDL2main PATHS ${SDL2_DIR} NO_DEFAULT_PATH)
+	if (SDL2_LIBRARY AND SDL2MAIN_LIBRARY)
+		set(SDL2_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/external_libs/SDL/include)
+		set(SDL2_LIBRARIES ${SDL2_LIBRARY} ${SDL2MAIN_LIBRARY})
+		set(SDL2_FOUND TRUE)
+	else()
+		message(STATUS "SDL2 not found in external_libs, searching for package...")
+		find_package(SDL2 REQUIRED)
+	endif()
+
 	if(SDL2_FOUND)
 		message(STATUS "SDL2 found: ${SDL2_INCLUDE_DIRS} ${SDL2_LIBRARIES}")
-	endif(SDL2_FOUND)
-endif(ENABLE_SDL2 MATCHES "ON")
-if(ENABLE_SDL2 MATCHES "BUNDLED")
-	set(SDL2_DIR ${CMAKE_SOURCE_DIR}/build_ext/built_sdl)
-	find_library(SDL2_LIBRARY SDL2 PATHS ${SDL2_DIR}/lib NO_DEFAULT_PATH)
-	find_library(SDL2MAIN_LIBRARY SDL2main PATHS ${SDL2_DIR}/lib NO_DEFAULT_PATH)
-	set(SDL2_INCLUDE_DIRS ${SDL2_DIR}/include/SDL2)
-	set(SDL2_LIBRARIES "${SDL2MAIN_LIBRARY};${SDL2_LIBRARY}")
-endif(ENABLE_SDL2 MATCHES "BUNDLED")
+	endif()
+endif()
 
-if(ENABLE_SOUND MATCHES "ON")
-	# FIXME applies only for *nix systems
-	find_package(PkgConfig)
-	pkg_check_modules(SDL2_MIXER REQUIRED SDL2_mixer>=2.0.4)
-	add_definitions(-DUSE_SDL_MIXER=1)
-endif(ENABLE_SOUND MATCHES "ON")
-if(ENABLE_SOUND MATCHES "BUNDLED")
-	set(SDL2_MIXER_DIR ${CMAKE_SOURCE_DIR}/build_ext/built_sdl_mixer)
-	set(SDL2_MIXER_INCLUDE_DIRS ${SDL2_MIXER_DIR}/include/SDL2)
-	find_library(SDL2_MIXER_LIBRARY SDL2_mixer PATHS ${SDL2_MIXER_DIR}/lib)
-	set(SDL2_MIXER_LIBRARIES ${SDL2_MIXER_LIBRARY})
-	add_definitions(-DUSE_SDL_MIXER=1)
-endif(ENABLE_SOUND MATCHES "BUNDLED")
+if(ENABLE_SOUND MATCHES ON)
+	set(SDL2_MIXER_DIR ${CMAKE_SOURCE_DIR}/external_libs/SDL_mixer_built)
+	find_library(SDL2_MIXER_LIBRARY SDL2_mixer PATHS ${SDL2_MIXER_DIR} NO_DEFAULT_PATH)
+	if (SDL2_MIXER_LIBRARY)
+		set(SDL2_MIXER_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/external_libs/SDL_mixer/include)
+		set(SDL2_MIXER_LIBRARIES ${SDL2_MIXER_LIBRARY})
+		set(SDL2_MIXER_FOUND TRUE)
+	else()
+		message(STATUS "SDL2_mixer not found in external_libs, searching for package...")
+		find_package(SDL2_mixer REQUIRED)
+	endif()
 
-if(ENABLE_FLUIDSYNTH MATCHES "ON")
-	find_package(PkgConfig)
-	pkg_check_modules(FLUIDSYNTH REQUIRED fluidsynth)
-	add_definitions("-DUSE_FLUIDSYNTH=1")
-endif(ENABLE_FLUIDSYNTH MATCHES "ON")
-if(ENABLE_FLUIDSYNTH MATCHES "BUNDLED")
-        find_library(FLUIDSYNTH_LIBRARY fluidsynth PATHS ${CMAKE_SOURCE_DIR}/build_ext/fluidsynth-lite/src)
-	set(FLUIDSYNTH_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/build_ext/fluidsynth-lite/include)
-	set(FLUIDSYNTH_LIBRARIES ${FLUIDSYNTH_LIBRARY})
-	add_definitions("-DUSE_FLUIDSYNTH=1")
-endif(ENABLE_FLUIDSYNTH MATCHES "BUNDLED")
+	if(SDL2_MIXER_FOUND)
+		add_definitions(-DUSE_SDL_MIXER)
+		message(STATUS "SDL2_mixer found: ${SDL2_MIXER_INCLUDE_DIRS} ${SDL2_MIXER_LIBRARIES}")
+	endif()
+endif()
+
+if(ENABLE_FLUIDSYNTH MATCHES ON)
+	set(FLUIDSYNTH_DIR ${CMAKE_SOURCE_DIR}/external_libs/fluidsynth-lite_built)
+	find_library(FLUIDSYNTH_LIBRARY fluidsynth PATHS ${FLUIDSYNTH_DIR}/src NO_DEFAULT_PATH)
+	if (FLUIDSYNTH_LIBRARY)
+		set(FLUIDSYNTH_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/external_libs/fluidsynth-lite/include)
+		set(FLUIDSYNTH_LIBRARIES ${FLUIDSYNTH_LIBRARY})
+		set(FLUIDSYNTH_FOUND TRUE)
+	else()
+		message(STATUS "FluidSynth not found in external_libs, searching for package...")
+		find_package(FLUIDSYNTH REQUIRED)
+	endif()
+
+	if(FLUIDSYNTH_FOUND)
+		add_definitions(-DUSE_FLUIDSYNTH)
+		message(STATUS "FluidSynth found: ${FLUIDSYNTH_INCLUDE_DIRS} ${FLUIDSYNTH_LIBRARIES}")
+	endif()
+endif()
 
 include_directories(
 	${SDL2_INCLUDE_DIRS}
@@ -278,6 +284,7 @@ set(GAME_SRC
 	src/GameSrc/wrapper.c
 	src/GameSrc/gamerend.c
 	src/GameSrc/mouselook.c
+	src/GameSrc/keypad.c
 )
 
 include_directories(
@@ -385,7 +392,12 @@ add_definitions(
 	-include precompiled.h
 )
 
-add_executable(systemshock ${MAC_SRC})
+add_executable(systemshock
+	${MAC_SRC}
+)
+set_target_properties(systemshock PROPERTIES
+	RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
 
 add_library(GAME_LIB ${GAME_SRC})
 

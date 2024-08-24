@@ -593,7 +593,7 @@ int MyThread(void *arg) {
                 return 0;
         }
 
-        SDL_Delay(delay);
+        SDL_Delay(0);
     }
 
     return 0;
@@ -620,7 +620,7 @@ void StartTrack(int thread, unsigned int track) {
     num = GetTrackNumChannels(track);
 
     while (SDL_AtomicGet(&ThreadCommand[thread]) != THREAD_READY)
-        SDL_Delay(1);
+        SDL_Delay(0);
 
     // check if enough device channels free; 16 channels available except one (percussion)
     if (NumUsedChannels + num <= 16 - 1) {
@@ -651,7 +651,7 @@ void StartTrack(int thread, unsigned int track) {
         SDL_AtomicSet(&ThreadCommand[thread], THREAD_PLAYTRACK);
 
         while (SDL_AtomicGet(&ThreadCommand[thread]) != THREAD_READY)
-            SDL_Delay(1);
+            SDL_Delay(0);
     }
 }
 
@@ -660,12 +660,12 @@ void StopTrack(int i) {
         return;
 
     while (SDL_AtomicGet(&ThreadCommand[i]) != THREAD_READY)
-        SDL_Delay(1);
+        SDL_Delay(0);
 
     SDL_AtomicSet(&ThreadCommand[i], THREAD_STOPTRACK);
 
     while (SDL_AtomicGet(&ThreadCommand[i]) != THREAD_READY)
-        SDL_Delay(1);
+        SDL_Delay(0);
 }
 
 void StopTheMusic(void) {
@@ -706,7 +706,7 @@ void InitReadXMI(void) {
 
     i = 0;
     while (SDL_AtomicGet(&ThreadCommand[i]) == THREAD_INIT)
-        SDL_Delay(1);
+        SDL_Delay(0);
 
     atexit(ShutdownReadXMI);
 }

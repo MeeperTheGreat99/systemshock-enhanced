@@ -96,10 +96,20 @@ uchar parse_motion_key(ushort code, short *cnum, short *cval) {
         *cnum = CONTROL_YVEL;
         *cval = -CONTROL_MAX_VAL / 2;
         break;
+		
+	case M_FASTSLIDELEFT:
+        *cnum = CONTROL_XVEL;
+        *cval = -CONTROL_MAX_VAL;
+        break;
 
     case M_SLIDELEFT:
         *cnum = CONTROL_XVEL;
         *cval = -CONTROL_MAX_VAL / 2;
+        break;
+
+    case M_FASTSLIDERIGHT:
+        *cnum = CONTROL_XVEL;
+        *cval = CONTROL_MAX_VAL;
         break;
 
     case M_SLIDERIGHT:

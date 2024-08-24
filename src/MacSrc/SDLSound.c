@@ -58,6 +58,19 @@ int snd_start_digital(void) {
     return OK;
 }
 
+void snd_pause(void) {
+	for (int channel = 0; channel < SND_MAX_SAMPLES; channel++) {
+        Mix_Pause(channel);
+    }
+}
+
+void snd_unpause(void) {
+	for (int channel = 0; channel < SND_MAX_SAMPLES; channel++) {
+        if (samples_by_channel[channel])
+			Mix_Resume(channel);
+    }
+}
+
 int snd_sample_play(int snd_ref, int len, uchar *smp, struct snd_digi_parms *dprm) {
 
     // Play one of the VOC format sounds

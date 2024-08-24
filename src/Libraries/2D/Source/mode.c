@@ -60,6 +60,10 @@ grs_mode_info grd_mode_info[GRD_MODES] = {
    { 1280, 1024, 24 }
 };
 
+extern uchar enable_experimental_resolution;
+extern int dynamic_width;
+extern int dynamic_height;
+
 // code from SMODE.ASM
 int gr_set_mode (int mode, int clear)
  {
@@ -68,6 +72,13 @@ int gr_set_mode (int mode, int clear)
 	
 	// copy width & height values from info table to capability list
 	grd_mode = mode;
+	
+	// Meeper - resolution shenanigans
+	if (enable_experimental_resolution) {
+		grd_mode_info[mode].w = dynamic_width;
+		grd_mode_info[mode].h = dynamic_height;
+	}
+	
 	grd_mode_cap.w = grd_mode_info[mode].w;
 	grd_mode_cap.h = grd_mode_info[mode].h;
 	
