@@ -1,5 +1,7 @@
 /RES/
+external_libs
 build
+*.cfg
 CMakeLists.txt.user
 # Prerequisites
 *.d

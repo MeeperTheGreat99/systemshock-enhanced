@@ -105,11 +105,7 @@ void SetDefaultPrefs(void) {
     gShockPrefs.prefPlayIntro = 1; // First time through, play the intro
     gShockPrefs.goPopupLabels = true;
     gShockPrefs.soBackMusic = true;
-#ifdef USE_FLUIDSYNTH
-    gShockPrefs.soMidiBackend = 2; // default to fluidsynth when available
-#else
     gShockPrefs.soMidiBackend = 0; // default to adlmidi
-#endif
     gShockPrefs.soMidiOutput = 0; // default to zero
     gShockPrefs.soSoundFX = true;
     gShockPrefs.doUseQD = false;
