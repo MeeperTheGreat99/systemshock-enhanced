@@ -252,7 +252,7 @@ void SetSDLPalette(int index, int count, uchar *pal) {
     static bool gammalut_init = 0;
     static uchar gammalut[100 - 10 + 1][256];
     if (!gammalut_init) {
-		double factor = 2.2;// (can_use_opengl() ? 1.0 : 2.2); // OpenGL uses 2.2
+        double factor = (use_opengl() ? 1.0 : 2.2); // OpenGL uses 2.2
         int i, j;
         for (i = 10; i <= 100; i++) {
             double gamma = (double)i * 1.0 / 100;
@@ -301,34 +301,27 @@ void SetSDLPalette(int index, int count, uchar *pal) {
 void SDLDraw() {
 #ifdef USE_OPENGL
     if (should_opengl_swap()) {
+        // We want the UI background to be transparent!
         sdlPalette->colors[255].a = 0x00;
+
+        // Draw the OpenGL view
+        opengl_swap_and_restore(drawSurface);
+
+        // Set the palette back, and we are done
+        sdlPalette->colors[255].a = 0xff;
+        return;
     }
 #endif
 
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, drawSurface);
 
-#ifdef USE_OPENGL
-    if (should_opengl_swap()) {
-        sdlPalette->colors[255].a = 0xff;
-		SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
-    }
-#endif
-
+    // Blit to the screen by drawing the surface 
     SDL_Rect srcRect = {0, 0, gScreenWide, gScreenHigh};
     SDL_RenderCopy(renderer, texture, &srcRect, NULL);
     SDL_DestroyTexture(texture);
 
-#ifdef USE_OPENGL
-    if (should_opengl_swap()) {
-        opengl_swap_and_restore();
-    } else {
-        SDL_RenderPresent(renderer);
-        SDL_RenderClear(renderer);
-    }
-#else
 	SDL_RenderPresent(renderer);
 	SDL_RenderClear(renderer);
-#endif
 }
 
 bool MouseCaptured = FALSE;

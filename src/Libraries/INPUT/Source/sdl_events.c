@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "keypadinput.h"
 #include "fullscrntogg.h"
 #include "Prefs.h"
+#include <ctype.h>
 #include <stdlib.h>
 #include <SDL.h>
 #include <OpenGL.h>

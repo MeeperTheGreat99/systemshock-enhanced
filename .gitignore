@@ -58,6 +58,11 @@ savgam*.dat
 # Eclipse CDT
 .project
 .cproject
+.DS_Store
+
+# CLion
+cmake-build-*
+.idea
 
 # other stuff
 *.aps

@@ -2,20 +2,22 @@ System Shock Enhanced - based on Shockolate
 ============================
 Based on the source code for PowerPC released by Night Dive Studios, Incorporated.
 
-[![Build Status TravisCI](https://travis-ci.org/Interrupt/systemshock.svg?branch=master)](https://travis-ci.org/Interrupt/systemshock) [![Build Status AppVeyor](https://ci.appveyor.com/api/projects/status/5fmcswq8n7ni0o9j/branch/master?svg=true)](https://ci.appveyor.com/project/Interrupt/systemshock)
-
 GENERAL NOTES
 =============
 
+Shockolate is a cross-platform source port of System Shock, using SDL2. This runs well on Linux and Windows right now,
+with some missing features that need reviving due to not being included in the source code that was released.
+
+The end goal for this project is something like what Chocolate Doom is for Doom:
+an experience that closely mimics the original, but portable and with some quality-of-life improvements,
+including an OpenGL renderer and mod support!
+
 This version of Shockolate is going to have some extra stuff. It is described below.
 
-Changes:
-========
 
 - Preferences and Keybinds are now stored in the game folder, next to the executable,
 - New or changed Controls/Keybinds are outlined at the bottom of this readme file.
 - Added an optional window icon: shock.bmp. I made a default one that comes with the source code and will work as long as it is in the same folder as the executable, which it is by default. You may delete it or replace it with your own if you choose.
-- There is also a Windows only (I think at least. I'm getting a Linux VM soon so I can see how icons work there) icon.rc file for use when building systemshock.exe. If it doesn't compile or something and you can't figure out a fix, remove the WIN32_RESOURCES variable from line 388 of CMakeLists.txt. This will build the executable without an icon.
 
 Added Features so far:
 ======================
@@ -68,38 +70,35 @@ Important Requirements
 Running
 =======
 
-## From a prebuilt package
+## 1) Acquire binary
+### From a prebuilt package
 
-Currently, I only have the ability to build for Windows. The releases can be found [here](https://github.com/MeeperTheGreat99/systemshock-enhanced/releases). However, I'll leave a link to the original Shockolate builds as well, [here](https://github.com/Interrupt/systemshock/releases/).
+Find a list of [downloadable packages](https://github.com/Interrupt/systemshock/releases/) for Linux and Windows.
+32- and 64-bit versions are available for Linux and Windows.
 
-## From source code
+### From source code
 
-Prerequisites: 
-- [CMake](https://cmake.org/download/) installed
+See [COMPILING.md](COMPILING.md) in the repository.
 
-Step 1. Build the dependencies:
-* Windows: `build_win32.sh` or `build_win64.sh` (Git Bash and MinGW recommended)
-* Linux/Mac: `build_deps.sh` or the CI build scripts in `osx-linux`
-* Other: `build_deps.sh` 
+## 2) Provide resources
 
-Step 2. Build and run the game itself
+### 2a) Game data
+Original cd-rom or SS:EE assets in a `res/data` folder need to be next to the executable.
+> Floppy disk assets are an older version that we can't load currently.
+
+### 2b) Music sound font (optional)
+In the `res` folder, add a `.sf2` sound font file that should be used for playback.
+
+> There is a file on the internet that's close to the Windows default everyone knows: http://rancid.kapsi.fi/windows.sf2
+> Please note that this is a file of unknown provenance.
+
+## 3) Execute binary
+
 ```
-cmake -G "Unix Makefiles" .
-make systemshock
 ./systemshock
 ```
 
-The following CMake options are supported in the build process:
-* `ENABLE_SDL2` - use system or bundled SDL2 (ON/BUNDLED, default BUNDLED)
-* `ENABLE_SOUND` - enable sound support (requires SDL2_mixer, ON/BUNDLED/OFF, default is BUNDLED)
-* `ENABLE_FLUIDSYNTH` - enable FluidSynth MIDI support (ON/BUNDLED/OFF, default is BUNDLED)
-* `ENABLE_OPENGL` - enable OpenGL support (ON/OFF, default ON)
-
-If you find yourself needing to modify the build script for Shockolate itself, `CMakeLists.txt` is the place to look into.
-
-
-Command line parameters
-============
+### Command line parameters
 
 `-nosplash` Disables the splash screens, causes the game to start straight to the main menu  
 `-fullscreen` Forces the game to start in fullscreen mode  
@@ -107,7 +106,9 @@ Command line parameters
 
 Modding Support
 ============
-Shockolate supports loading mods and full on fan missions. Just point the executable at a mod file or folder and the game will load it in. So far mod loading supports additional `.res` and `.dat` files for resources and missions respectively.
+Shockolate supports loading mods and full on fan missions.
+Point the executable at a mod file or folder and the game will load it in.
+So far mod loading supports additional `.res` and `.dat` files for resources and missions respectively.
 
 Run a fan mission from a folder:
 ```
